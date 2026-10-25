@@ -14,6 +14,7 @@ Règles :
   jamais de couleur fixe dans les composants (sauf les couleurs des parfums, qui sont des données).
 - La logique de service (`contracts/plan.ts`) et la validation des commandes
   (`contracts/orders.ts`) sont testées : toute modification passe par leurs tests.
-- Dépôt destiné à être vendu : il doit être **privé** (vérifier la visibilité avant tout push).
+- **Bêta gratuite** : tout est gratuit et illimité, aucune mention de paiement ni de Premium
+  dans l'interface (décision de Bastien, 25 oct. 2026). Voir `CONTEXTE-PROJET.md`.
 
 Code dans `app/`. Vérifier avec `npm run check`, `npm test` et `npm run build`.

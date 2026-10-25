@@ -46,10 +46,14 @@ sur le modèle d'Equiliz et Babelibris (l'ancien code n'existait plus que sous f
 - **Page invité** : prénom retenu par le navigateur, plusieurs glaces par personne (enfants),
   modification et annulation tant que la glace n'est pas servie (jeton secret gardé dans le
   navigateur, `orders.guest_token`), liste de ceux qui ont déjà commandé.
-- **Freemium** (`contracts/plans.ts`) : gratuit = 1 tournée ouverte à la fois, 12 glaces par
-  tournée. Premium = illimité (plafonds techniques dans `HARD_LIMITS`). `BETA_PREMIUM=true`
-  donne Premium à tout le monde pendant la bêta, comme Equiliz. Modèle visé : **achat unique**,
-  comme Babelibris. Le paiement n'est pas encore fait (`users.premium` posé à la main).
+- **Bêta gratuite** (décidée par Bastien le 25 oct. 2026 : Glacify n'était pas pensée comme une
+  app payante) : tout est gratuit et illimité pour tout le monde, comme la bêta d'Equiliz, et
+  l'interface ne parle ni de paiement ni de Premium (« Bêta gratuite » dans Moi). Seuls restent
+  les plafonds anti-abus de `HARD_LIMITS` (150 glaces par tournée, 8 par invité…).
+  Le mécanisme d'une éventuelle version payante est gardé en sommeil : limites dans
+  `contracts/plans.ts`, `users.premium`, `api/lib/entitlements.ts`. Il ne s'active que si le
+  serveur tourne avec `BETA_PREMIUM=false` (sans la variable, tout reste gratuit). À ne
+  rallumer que sur décision de Bastien.
 
 ## Direction artistique : « gelato chic »
 
@@ -75,7 +79,7 @@ Rien n'est encore déployé. Prévu : https://glacify.bastiengaffet.fr, service 
 
 1. Mise en ligne sur le VPS, puis premier APK (workflow `Android`).
 2. Prix (par contenant, par boule, par supplément) et total par tournée, pour l'usage commerce.
-3. Achat unique Premium (Google Play Billing dans l'APK, Stripe sur le web).
+3. (Seulement si Bastien le décide un jour) une version payante : le mécanisme est déjà là.
 4. Tutoriel interactif (visite guidée, comme Equiliz) joué sur une tournée de démonstration.
 5. Statistiques : parfums les plus demandés, pour savoir quoi racheter.
 6. Plusieurs serveurs sur la même tournée (partager l'accès au plan de service).

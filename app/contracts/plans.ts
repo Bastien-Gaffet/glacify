@@ -1,7 +1,6 @@
 /**
- * Free-tier limits. Premium (a one-time purchase, as planned for Equiliz and
- * Babelibris) lifts them. During the beta, BETA_PREMIUM=true gives Premium to
- * everyone.
+ * Limits of a possible free tier, kept for later. Glacify is free during the
+ * beta: they apply only if the server runs with BETA_PREMIUM=false.
  */
 export const FREE_LIMITS = {
   /** Rounds taking orders at the same time */

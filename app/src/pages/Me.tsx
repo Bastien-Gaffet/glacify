@@ -55,11 +55,11 @@ export default function Me() {
       <div className="rounded-[28px] bg-ink p-5 text-onink">
         <div className="flex items-center gap-2">
           <Sparkles size={18} />
-          <p className="font-display text-lg font-bold">{user.premium ? "Premium" : "Version gratuite"}</p>
+          <p className="font-display text-lg font-bold">{user.beta ? "Bêta gratuite" : user.premium ? "Premium" : "Version gratuite"}</p>
         </div>
         <p className="mt-1 text-sm text-onink/70">
           {user.beta
-            ? "Offert pendant la bêta : tournées et glaces illimitées."
+            ? "Glacify est entièrement gratuit pendant la bêta : tournées et glaces illimitées."
             : user.premium
               ? "Tournées et glaces illimitées."
               : `${FREE_LIMITS.openRounds} tournée ouverte à la fois, ${FREE_LIMITS.ordersPerRound} glaces par tournée.`}

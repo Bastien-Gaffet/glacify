@@ -16,6 +16,9 @@ export const env = {
   host: process.env.HOST ?? "127.0.0.1",
   port: parseInt(process.env.PORT || "3000"),
   registrationOpen: process.env.REGISTRATION_OPEN !== "false",
-  /** Free beta: everyone gets Premium (as in Equiliz). Remove to bring the free limits back. */
-  betaPremium: process.env.BETA_PREMIUM === "true",
+  /**
+   * Free beta, as in Equiliz: everything is unlimited for everyone. On unless
+   * BETA_PREMIUM=false, so a deploy without the variable stays free.
+   */
+  betaPremium: process.env.BETA_PREMIUM !== "false",
 };
