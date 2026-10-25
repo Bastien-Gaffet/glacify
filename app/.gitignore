@@ -1,0 +1,11 @@
+node_modules
+dist
+*.log
+*.tsbuildinfo
+.env
+.env.local
+.DS_Store
+.idea
+coverage/
+# Capacitor Android project: generated in CI
+android/

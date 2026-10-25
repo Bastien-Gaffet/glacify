@@ -1,0 +1,20 @@
+[Unit]
+Description=Glacify - commandes et service de glaces
+After=network.target mariadb.service
+Wants=mariadb.service
+
+[Service]
+Type=simple
+User=glacify
+Group=glacify
+WorkingDirectory=/opt/glacify/app
+EnvironmentFile=/opt/glacify/app/.env
+ExecStart=/opt/node-v24.18.0-linux-x64/bin/node dist/boot.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+MemoryMax=200M
+
+[Install]
+WantedBy=multi-user.target

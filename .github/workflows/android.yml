@@ -1,0 +1,61 @@
+# Builds the Android app (Capacitor shell loading https://glacify.bastiengaffet.fr).
+#
+# For now: an unsigned-for-store debug APK, installable for testing. Signing
+# (keystore secrets) and Google Play upload come with the public release, as
+# in Equiliz.
+name: Android
+
+on:
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: npm ci
+      - run: npm run build
+
+      # The android/ project is generated, not committed
+      - run: npx cap add android
+      - run: npx cap sync android
+
+      # Glacify launcher icons and launch screen instead of Capacitor's defaults
+      # (rendered from app/marketing/logo/*.svg)
+      - name: App icon and launch screen
+        run: |
+          find android/app/src/main/res -name 'splash.png' -delete
+          cp -r android-res/. android/app/src/main/res/
+
+      # Edge-to-edge, light window
+      - run: node deploy/android-patch.mjs
+
+      - name: Version from run number
+        run: |
+          CODE=${{ github.run_number }}
+          sed -i "s/versionCode [0-9]*/versionCode ${CODE}/; s/versionName \"[^\"]*\"/versionName \"0.1.${CODE}\"/" android/app/build.gradle
+
+      - name: Debug APK
+        working-directory: app/android
+        run: |
+          ./gradlew --no-daemon assembleDebug
+          mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/glacify-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: glacify-android
+          path: app/android/app/build/outputs/apk/debug/glacify-debug.apk
+          if-no-files-found: error
