@@ -22,3 +22,9 @@ npm run dev            # http://localhost:3000
 ```
 
 Vérifications : `npm run check`, `npm test`, `npm run build`.
+
+## Droits
+
+© 2026 Bastien Gaffet. Tous droits réservés. Le code est public pour être consulté, mais aucune
+licence n'est accordée : sa réutilisation, sa copie, sa modification ou sa redistribution
+demandent une autorisation écrite.

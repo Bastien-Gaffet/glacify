@@ -222,7 +222,8 @@ pas encore été installé sur un vrai téléphone.
   gratuit et illimité, et il n'y a aucune mention de Premium. Le mécanisme de limites reste en
   sommeil dans le code ; il ne s'activerait qu'avec `BETA_PREMIUM=false`. Seuls restent des
   garde-fous anti-abus : 150 glaces par tournée, 8 par invité.
-  Le dépôt peut donc rester public, et la licence MIT ne pose pas de problème.
+  Le dépôt reste public, mais **sans licence libre** : le fichier MIT a été retiré le
+  26 octobre 2026 à votre demande (code consultable, tous droits réservés).
 - **Noms techniques** : adresse `glacify.bastiengaffet.fr`, service, utilisateur et base
   `glacify`, port `8103`, paquet Android **`app.glacify.android`**. Ce dernier devient
   **définitif** dès le premier envoi sur Google Play.

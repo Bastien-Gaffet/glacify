@@ -18,4 +18,7 @@ Règles :
 - **Bêta gratuite** : tout est gratuit et illimité, aucune mention de paiement ni de Premium
   dans l'interface (décision de Bastien, 25 oct. 2026). Voir `CONTEXTE-PROJET.md`.
 
+- **Pas de licence libre** : dépôt public mais tous droits réservés (décision de Bastien,
+  26 oct. 2026). Ne jamais ajouter de fichier `LICENSE` ni de licence open source.
+
 Code dans `app/`. Vérifier avec `npm run check`, `npm test` et `npm run build`.
