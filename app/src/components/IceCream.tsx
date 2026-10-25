@@ -37,6 +37,24 @@ export function IceCream({
       aria-hidden="true"
       className={className}
     >
+      {/* Scoops first: the container is drawn over the bottom scoop, which sits in it */}
+      {scoops
+        .map((color, i) => {
+          const cy = bottomCy - i * step;
+          const cx = 30 + (i % 2 === 0 ? 0 : i % 4 === 1 ? -2.5 : 2.5);
+          const last = i === n - 1;
+          return color ? (
+            <g key={`${i}-${color}`} className={animateLast && last ? "scoop-drop" : undefined}>
+              <circle cx={cx} cy={cy} r={r} fill={color} />
+              <path d={`M${cx - r + 1.5} ${cy + 4} a${r} ${r} 0 0 0 ${2 * r - 3} 0`} fill="none" stroke="#000" strokeOpacity="0.07" strokeWidth="3" />
+              <circle cx={cx} cy={cy} r={r - 0.5} fill="none" stroke="#000" strokeOpacity="0.08" />
+              <ellipse cx={cx - 5} cy={cy - 5.5} rx="3.6" ry="2.2" fill="#fff" opacity="0.55" transform={`rotate(-25 ${cx - 5} ${cy - 5.5})`} />
+            </g>
+          ) : (
+            <circle key="empty" cx={cx} cy={cy} r={r} fill="none" stroke="#CFCAC5" strokeWidth="1.6" strokeDasharray="4 3.5" />
+          );
+        })
+        .reverse()}
       {cone ? (
         <>
           <clipPath id={clip}>
@@ -55,26 +73,9 @@ export function IceCream({
       ) : (
         <>
           <path d={`M9 ${baseY} L51 ${baseY} L46 ${baseY + 24} L14 ${baseY + 24} Z`} fill="#FFFFFF" stroke="#E6E3E0" strokeWidth="1" />
-          <path d={`M10.3 ${baseY + 6} L49.7 ${baseY + 6} L49 ${baseY + 9.5} L11 ${baseY + 9.5} Z`} fill="rgb(222 49 99)" />
+          <path d={`M10.3 ${baseY + 6} L49.7 ${baseY + 6} L49 ${baseY + 9.5} L11 ${baseY + 9.5} Z`} fill="rgb(var(--accent))" />
         </>
       )}
-      {scoops
-        .map((color, i) => {
-          const cy = bottomCy - i * step;
-          const cx = 30 + (i % 2 === 0 ? 0 : i % 4 === 1 ? -2.5 : 2.5);
-          const last = i === n - 1;
-          return color ? (
-            <g key={`${i}-${color}`} className={animateLast && last ? "scoop-drop" : undefined}>
-              <circle cx={cx} cy={cy} r={r} fill={color} />
-              <path d={`M${cx - r + 1.5} ${cy + 4} a${r} ${r} 0 0 0 ${2 * r - 3} 0`} fill="none" stroke="#000" strokeOpacity="0.07" strokeWidth="3" />
-              <circle cx={cx} cy={cy} r={r - 0.5} fill="none" stroke="#000" strokeOpacity="0.08" />
-              <ellipse cx={cx - 5} cy={cy - 5.5} rx="3.6" ry="2.2" fill="#fff" opacity="0.55" transform={`rotate(-25 ${cx - 5} ${cy - 5.5})`} />
-            </g>
-          ) : (
-            <circle key="empty" cx={cx} cy={cy} r={r} fill="none" stroke="#CFCAC5" strokeWidth="1.6" strokeDasharray="4 3.5" />
-          );
-        })
-        .reverse()}
     </svg>
   );
 }

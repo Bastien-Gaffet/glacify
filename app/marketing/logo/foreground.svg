@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
   <!-- Android adaptive icon foreground: the mark stays inside the 66dp safe circle -->
   <g transform="translate(25 22) scale(0.9)">
-    <path d="M19 33 L32 61 L45 33 Z" fill="#F4D49B"/>
-    <path d="M23 33 L38 52 M31 33 L41 46 M41 33 L26 52 M33 33 L23 46" stroke="#D3A15E" stroke-width="1.6" stroke-linecap="round"/>
     <circle cx="32" cy="22" r="14" fill="#FFFFFF"/>
     <path d="M18.5 26c3 2.6 4.6-.6 7.4 1.6s5 3.4 6.6.4 4.4-2 6.3-.2 4.4.6 6.7-1.8" fill="none" stroke="#F7B6C6" stroke-width="3" stroke-linecap="round"/>
+    <path d="M19 33 L32 61 L45 33 Z" fill="#F4D49B"/>
+    <path d="M23 33 L38 52 M31 33 L41 46 M41 33 L26 52 M33 33 L23 46" stroke="#D3A15E" stroke-width="1.6" stroke-linecap="round"/>
   </g>
 </svg>
