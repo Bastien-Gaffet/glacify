@@ -26,7 +26,8 @@ export function IceCream({
   const n = scoops.length;
   const bottomCy = 3 + r + (n - 1) * step;
   const cone = kind === "cone";
-  const baseY = bottomCy + (cone ? 5 : 3);
+  // The bottom scoop sinks into its container: half into the cone, more into the cup
+  const baseY = bottomCy + (cone ? 1 : -3);
   const height = baseY + (cone ? 34 : 24) + 1;
 
   return (

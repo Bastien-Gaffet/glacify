@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <circle cx="32" cy="22" r="14" fill="#F29BB0"/>
-  <path d="M18.5 26c3 2.6 4.6-.6 7.4 1.6s5 3.4 6.6.4 4.4-2 6.3-.2 4.4.6 6.7-1.8" fill="none" stroke="#DE3163" stroke-width="3" stroke-linecap="round"/>
+  <path d="M18.5 21.5c3 2.6 4.6-.6 7.4 1.6s5 3.4 6.6.4 4.4-2 6.3-.2 4.4.6 6.7-1.8" fill="none" stroke="#DE3163" stroke-width="3" stroke-linecap="round"/>
   <ellipse cx="26" cy="16" rx="4" ry="2.4" fill="#fff" opacity=".6" transform="rotate(-25 26 16)"/>
-  <path d="M19 33 L32 61 L45 33 Z" fill="#E9B872"/>
-  <path d="M23 33 L38 52 M31 33 L41 46 M41 33 L26 52 M33 33 L23 46" stroke="#C98D47" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M18 27 L32 61 L46 27 Z" fill="#E9B872"/>
+  <clipPath id="cone"><path d="M18 27 L32 61 L46 27 Z"/></clipPath>
+  <path clip-path="url(#cone)" d="M14 27 L40 61 M22 27 L48 61 M30 27 L56 61 M50 27 L24 61 M42 27 L16 61 M34 27 L8 61" stroke="#C98D47" stroke-width="1.6" stroke-linecap="round"/>
 </svg>
