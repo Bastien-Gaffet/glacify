@@ -1,6 +1,6 @@
 # Glacify — contexte du projet
 
-Mis à jour le 25 octobre 2026.
+Mis à jour le 26 octobre 2026.
 
 ## Le produit
 
@@ -70,15 +70,18 @@ Choisie par Bastien le 25 octobre 2026. Un comptoir clair et lumineux, une typog
 Logo : un cornet à une boule blanche ourlée de rose, sur fond framboise (`marketing/logo/`,
 icônes rendues par `node marketing/logo/render.cjs`).
 
-## Mise en ligne (à faire)
+## Mise en ligne (faite le 26 octobre 2026)
 
-Rien n'est encore déployé. Prévu : https://glacify.bastiengaffet.fr, service `glacify` sur
-`127.0.0.1:8103`, base `glacify` dans la MariaDB existante. Pas à pas complet (DNS, VPS, premier
-déploiement, premier test sur téléphone, APK) : **`GUIDE-BASTIEN.md`**.
+En ligne sur https://glacify.bastiengaffet.fr : enregistrement A `glacify` → `72.62.190.7` (API
+Hostinger), service systemd `glacify` sur `127.0.0.1:8103`, base `glacify` dans la MariaDB
+existante, certificat Let's Encrypt (webroot). Le premier APK (workflow `Android`) est servi sur
+https://glacify.bastiengaffet.fr/glacify.apk. Mises à jour : `sh deploy/push.sh` depuis `app/`.
+Les scripts de `deploy/` doivent rester en LF (`.gitattributes`) : extraits en CRLF sous Windows,
+`sh` échoue sur le VPS. Pas à pas et premier test sur téléphone : **`GUIDE-BASTIEN.md`**.
 
 ## Feuille de route (proposée)
 
-1. Mise en ligne sur le VPS, puis premier APK (workflow `Android`).
+1. Premier test sur téléphone (site et APK) et retours de Bastien.
 2. Prix (par contenant, par boule, par supplément) et total par tournée, pour l'usage commerce.
 3. (Seulement si Bastien le décide un jour) une version payante : le mécanisme est déjà là.
 4. Tutoriel interactif (visite guidée, comme Equiliz) joué sur une tournée de démonstration.

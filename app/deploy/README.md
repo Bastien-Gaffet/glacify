@@ -1,6 +1,6 @@
 # Déploiement sur le VPS
 
-**Pas encore en ligne.** Même modèle qu'Equiliz et Babelibris :
+**En ligne depuis le 26 octobre 2026.** Même modèle qu'Equiliz et Babelibris :
 
 - Service systemd `glacify` (utilisateur système `glacify`) sur `127.0.0.1:8103` (vérifier que
   le port est libre), unité `deploy/glacify.service` → `/etc/systemd/system/glacify.service`.

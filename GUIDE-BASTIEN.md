@@ -1,27 +1,23 @@
 # Guide de Bastien : mettre Glacify en ligne et le tester
 
 Rédigé le 25 octobre 2026, à la fin de la session où Glacify a été refait. Tout ce qui suit se
-fait depuis votre ordinateur (accès SSH au VPS, jeton DNS Hostinger). Rien n'est encore en
-ligne : ni DNS, ni base, ni service.
+fait depuis votre ordinateur (accès SSH au VPS, jeton DNS Hostinger).
+
+**Mise à jour du 26 octobre 2026 : les étapes 0 à 3 et 5 sont faites.** Le site est en ligne
+sur https://glacify.bastiengaffet.fr et l'APK sur https://glacify.bastiengaffet.fr/glacify.apk.
+Il reste l'étape 4 (votre test sur téléphone). Les étapes sont gardées comme référence, pour
+une réinstallation.
 
 ---
 
 ## 0. Récupérer le code
 
-Tout le code est sur GitHub, sur la branche **`ccr-30a92e47-5yjyst`** (pas encore sur `main`).
+Tout le code est sur `main` (la branche `ccr-30a92e47-5yjyst` y a été fusionnée le 26 octobre ;
+l'ancien prototype Expo reste dans l'historique, commit `9c34e76`).
 
 ```bash
 git clone https://github.com/Bastien-Gaffet/glacify.git
-cd glacify
-git checkout ccr-30a92e47-5yjyst
 ```
-
-**À faire en premier : la fusionner dans `main`** (pull request ou
-`git checkout main && git merge ccr-30a92e47-5yjyst && git push`). C'est nécessaire pour le
-bouton « Run workflow » du workflow **Android** : GitHub ne propose un lancement manuel que si
-le fichier du workflow est sur la branche par défaut.
-
-La CI (types, tests, build) passe déjà sur cette branche.
 
 ---
 
@@ -191,10 +187,8 @@ Puis sur le téléphone : **https://glacify.bastiengaffet.fr/glacify.apk** (serv
 L'APK charge le site en ligne : une mise à jour web suffit ensuite, sauf si l'icône ou la
 config Capacitor change.
 
-**Pas encore testé** : ce workflow n'a jamais tourné, faute de Java et du SDK Android pendant
-la session. Il est copié de celui de Babelibris, qui marche. Seul `deploy/android-patch.mjs`
-change : bords transparents avec icônes sombres, fond blanc. S'il échoue, le journal de
-l'action dira quelle étape.
+Le premier build a réussi le 26 octobre 2026 (APK de 4,3 Mo, déjà copié sur le VPS). Il n'a
+pas encore été installé sur un vrai téléphone.
 
 ---
 
@@ -245,8 +239,11 @@ simulés : le parcours complet (hôte, invité par le lien, service, « Servie �
 carte, compte), les types, les 8 tests unitaires et le build de production. La CI GitHub est
 verte.
 
-Pas vérifié : le déploiement sur le VPS (pas d'accès), l'APK Android, le partage natif
-(« Envoyer ») sur un vrai téléphone, et l'affichage sur un vrai écran avec encoche.
+Vérifié le 26 octobre 2026 : le déploiement sur le VPS (`ping` en ligne, page et fichiers en
+200, tables créées, Equiliz et Babelibris intacts) et le build de l'APK.
+
+Pas vérifié : l'installation de l'APK, le partage natif (« Envoyer ») sur un vrai téléphone, et
+l'affichage sur un vrai écran avec encoche.
 
 ## 8. Ensuite (proposé)
 
