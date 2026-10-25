@@ -8,7 +8,8 @@ Glacify transforme les commandes en plan de service : contenants, boules parfum 
 
 - Contexte, décisions et feuille de route : [`CONTEXTE-PROJET.md`](CONTEXTE-PROJET.md)
 - Code : [`app/`](app) (React + Vite + Hono/tRPC + Drizzle/MariaDB, Capacitor pour Android)
-- Déploiement : [`app/deploy/README.md`](app/deploy/README.md)
+- Mise en ligne et premier test, pas à pas : [`GUIDE-BASTIEN.md`](GUIDE-BASTIEN.md)
+- Déploiement (référence) : [`app/deploy/README.md`](app/deploy/README.md)
 
 ## Développement
 

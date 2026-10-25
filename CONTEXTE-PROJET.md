@@ -73,7 +73,8 @@ icônes rendues par `node marketing/logo/render.cjs`).
 ## Mise en ligne (à faire)
 
 Rien n'est encore déployé. Prévu : https://glacify.bastiengaffet.fr, service `glacify` sur
-`127.0.0.1:8103`, base `glacify` dans la MariaDB existante. Étapes dans `app/deploy/README.md`.
+`127.0.0.1:8103`, base `glacify` dans la MariaDB existante. Pas à pas complet (DNS, VPS, premier
+déploiement, premier test sur téléphone, APK) : **`GUIDE-BASTIEN.md`**.
 
 ## Feuille de route (proposée)
 

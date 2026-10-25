@@ -1,6 +1,7 @@
 # Projet : Glacify — commandes et service de glaces
 
 Lire **`CONTEXTE-PROJET.md`** avant toute action : produit, décisions, DA, feuille de route.
+`GUIDE-BASTIEN.md` : ce que Bastien fait lui-même (DNS, VPS, déploiement, tests sur téléphone).
 
 Règles :
 - Répondre en français. Vouvoiement partout dans l'interface.
