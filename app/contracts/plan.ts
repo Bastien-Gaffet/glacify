@@ -1,9 +1,11 @@
 import type { Container, Flavor, Menu, Topping } from "./menu";
 
 /**
- * Turns individual orders into a production-friendly service plan: scoops are
- * grouped flavor by flavor and layer by layer (a cone needs its bottom scoop
- * before the next one), so each tub is opened as few times as possible.
+ * Turns individual orders into a production-friendly service plan: one step
+ * per tub, most ordered flavor first, and each tub is opened only once. The
+ * stacking order is free in cups and in cones alike, so every ice cream gets
+ * its scoops in tub order. At each tub, the people are grouped by what their
+ * container already holds, to tell an empty cup from one that has chocolate.
  */
 
 export type PlanOrder = {
@@ -14,7 +16,14 @@ export type PlanOrder = {
   toppings: number[];
 };
 
-export type FlavorGroup<O> = { flavorId: number; flavor: Flavor; people: O[] };
+/** People whose container holds the same flavors when this tub is opened */
+export type TubGroup<O> = {
+  /** Flavors already in the container, in tub order; empty for an empty container */
+  base: Flavor[];
+  people: { order: O; count: number }[];
+};
+
+export type Tub<O> = { flavorId: number; flavor: Flavor; scoops: number; groups: TubGroup<O>[] };
 
 const missingFlavor = (id: number): Flavor => ({
   id,
@@ -34,37 +43,36 @@ export function buildPlan<O extends PlanOrder>(orders: O[], menu: Menu) {
   const flavorById = new Map(menu.flavors.map((f) => [f.id, f]));
   const flavor = (id: number) => flavorById.get(id) ?? missingFlavor(id);
   const rank = new Map(menu.flavors.map((f, i) => [f.id, i]));
-  const containerById = new Map(menu.containers.map((c) => [c.id, c]));
   const active = orders.filter((o) => o.scoops.length > 0);
   const counts = countFlavors(active);
 
-  // Most-used flavors first, carte order on ties
-  const cmp = (a: number, b: number) =>
-    counts.get(b)! - counts.get(a)! || (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity);
+  // Tub order: most ordered flavors first, carte order on ties
+  const tubOrder = [...counts.keys()].sort(
+    (a, b) => counts.get(b)! - counts.get(a)! || (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity),
+  );
+  const tubRank = new Map(tubOrder.map((id, i) => [id, i]));
 
-  // In a cup the stacking order is free: line scoops up with the most popular
-  // flavors so they share tubs within each layer. Cones keep the asked order.
-  const arranged = active.map((order) => ({
-    order,
-    scoops: containerById.get(order.containerId)?.kind === "cup" ? [...order.scoops].sort(cmp) : order.scoops,
-  }));
+  /** Each ice cream's scoops in the order they are put in, bottom first */
+  const placed = new Map(active.map((o) => [o.id, [...o.scoops].sort((a, b) => tubRank.get(a)! - tubRank.get(b)!)]));
 
-  const depth = Math.max(0, ...arranged.map((a) => a.scoops.length));
-  const layers: FlavorGroup<O>[][] = [];
-  for (let i = 0; i < depth; i++) {
-    const groups = new Map<number, O[]>();
-    for (const a of arranged) {
-      const f = a.scoops[i];
-      if (f === undefined) continue;
-      if (!groups.has(f)) groups.set(f, []);
-      groups.get(f)!.push(a.order);
+  const tubs: Tub<O>[] = tubOrder.map((flavorId, i) => {
+    const groups = new Map<string, TubGroup<O>>();
+    for (const order of active) {
+      const count = order.scoops.filter((f) => f === flavorId).length;
+      if (!count) continue;
+      const base = [...new Set(order.scoops)].filter((f) => tubRank.get(f)! < i).sort((a, b) => tubRank.get(a)! - tubRank.get(b)!);
+      const key = base.join(",");
+      if (!groups.has(key)) groups.set(key, { base: base.map(flavor), people: [] });
+      groups.get(key)!.people.push({ order, count });
     }
-    layers.push(
-      [...groups]
-        .map(([flavorId, people]) => ({ flavorId, flavor: flavor(flavorId), people }))
-        .sort((x, y) => y.people.length - x.people.length || cmp(x.flavorId, y.flavorId)),
-    );
-  }
+    return {
+      flavorId,
+      flavor: flavor(flavorId),
+      scoops: counts.get(flavorId)!,
+      // Empty containers first, then the fullest bases last
+      groups: [...groups.values()].sort((x, y) => x.base.length - y.base.length || y.people.length - x.people.length),
+    };
+  });
 
   const containers: { container: Container; count: number }[] = [];
   for (const c of menu.containers) {
@@ -76,14 +84,13 @@ export function buildPlan<O extends PlanOrder>(orders: O[], menu: Menu) {
     .map((topping) => ({ topping, people: active.filter((o) => o.toppings.includes(topping.id)) }))
     .filter((g) => g.people.length > 0);
 
-  const totals = [...counts.keys()].sort(cmp).map((id) => ({ flavor: flavor(id), count: counts.get(id)! }));
-
   return {
     orders: active,
-    layers,
+    tubs,
+    placed: (o: PlanOrder) => placed.get(o.id) ?? o.scoops,
     containers,
     toppingGroups,
-    totals,
+    totals: tubs.map((t) => ({ flavor: t.flavor, count: t.scoops })),
     scoopCount: active.reduce((n, o) => n + o.scoops.length, 0),
   };
 }

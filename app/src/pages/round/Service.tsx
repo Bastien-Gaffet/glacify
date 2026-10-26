@@ -67,8 +67,9 @@ function Task({
 }
 
 /**
- * The service plan: containers to get out, scoops flavor by flavor and layer
- * by layer, toppings, then each ice cream to hand over. A step's key carries
+ * The service plan: containers to get out, scoops one tub at a time (each
+ * tub opened once, people grouped by what their container already holds),
+ * toppings, then each ice cream to hand over. A step's key carries
  * its count, so a step ticked before a new order arrived shows up again.
  */
 export function Service({ data, onClose }: { data: RoundData; onClose: () => void }) {
@@ -107,9 +108,19 @@ export function Service({ data, onClose }: { data: RoundData; onClose: () => voi
 
   const served = plan.orders.filter((o) => o.servedAt).length;
   const total = plan.orders.length;
-  const depth = plan.layers.length;
   const names = (people: { name: string }[]) => people.map((p) => p.name).join(", ");
-  const layerTitle = (i: number) => (depth === 1 ? "Les boules" : i === 0 ? "Les premières boules" : i === 1 ? "Les deuxièmes boules" : `Boules n°${i + 1}`);
+  /** "chocolat et vanille" */
+  const flavorList = (flavors: { name: string }[]) => {
+    const n = flavors.map((f) => f.name.toLowerCase());
+    return n.length > 1 ? `${n.slice(0, -1).join(", ")} et ${n.at(-1)}` : n[0]!;
+  };
+  /** "1 coupelle vide", "2 cornets et 1 pot vides" (the names are free, so no article) */
+  const emptyContainers = (people: { order: RoundOrder }[]) => {
+    const byContainer = new Map<number, number>();
+    for (const { order } of people) byContainer.set(order.containerId, (byContainer.get(order.containerId) ?? 0) + 1);
+    const parts = [...byContainer].map(([id, n]) => plural(n, l.container(id).name.toLowerCase()));
+    return `${parts.length > 1 ? `${parts.slice(0, -1).join(", ")} et ${parts.at(-1)}` : parts[0]} ${people.length > 1 ? "vides" : "vide"}`;
+  };
   let step = 1;
 
   return (
@@ -149,29 +160,27 @@ export function Service({ data, onClose }: { data: RoundData; onClose: () => voi
         ))}
       </Step>
 
-      {plan.layers.map((groups, i) => (
-        <Step
-          key={i}
-          n={step++}
-          title={layerTitle(i)}
-          hint={depth > 1 && i === 0 ? "Étage par étage : toutes les premières boules, puis les deuxièmes. Un bac ouvert à la fois." : undefined}
-        >
-          {groups.map((g) => {
-            const key = `l${i}:${g.flavorId}:${g.people.length}`;
-            return (
-              <Task
-                key={key}
-                done={checks.has(key)}
-                onToggle={() => toggle(key)}
-                lead={<span className="h-10 w-10 flex-none rounded-full shadow-[inset_0_0_0_1px_rgb(0_0_0/0.08)]" style={{ background: g.flavor.color }} />}
-                title={g.flavor.name}
-                sub={names(g.people)}
-                count={g.people.length}
-              />
-            );
-          })}
-        </Step>
-      ))}
+      <Step n={step++} title="Les boules" hint="Un bac à la fois : servez toutes ses boules, puis remettez-le au congélateur.">
+        {plan.tubs.map((tub) => {
+          const key = `b:${tub.flavorId}:${tub.scoops}`;
+          return (
+            <Task
+              key={key}
+              done={checks.has(key)}
+              onToggle={() => toggle(key)}
+              lead={<span className="h-10 w-10 flex-none rounded-full shadow-[inset_0_0_0_1px_rgb(0_0_0/0.08)]" style={{ background: tub.flavor.color }} />}
+              title={tub.flavor.name}
+              sub={tub.groups.map((g, i) => (
+                <span key={i} className="mt-0.5 block">
+                  <span className="font-medium text-ink/80">{g.base.length ? `Sur ${flavorList(g.base)}` : `Dans ${emptyContainers(g.people)}`} : </span>
+                  {g.people.map((p) => (p.count > 1 ? `${p.order.name} (${p.count} boules)` : p.order.name)).join(", ")}
+                </span>
+              ))}
+              count={tub.scoops}
+            />
+          );
+        })}
+      </Step>
 
       {plan.toppingGroups.length > 0 && (
         <Step n={step++} title="Les suppléments">
@@ -190,7 +199,7 @@ export function Service({ data, onClose }: { data: RoundData; onClose: () => voi
             onToggle={() => serve(o)}
             lead={
               <span className="flex w-9 flex-none justify-center">
-                <IceCream kind={l.container(o.containerId).kind} colors={o.scoops.map((id) => l.flavor(id).color)} size={30} />
+                <IceCream kind={l.container(o.containerId).kind} colors={plan.placed(o).map((id) => l.flavor(id).color)} size={30} />
               </span>
             }
             title={o.name}

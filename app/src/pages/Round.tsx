@@ -21,7 +21,11 @@ export default function Round() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const view: View = params.get("vue") === "service" ? "service" : "orders";
-  const setView = (v: View) => setParams(v === "service" ? { vue: "service" } : {}, { replace: true });
+  // Each view starts at its top: the service begins with its first step
+  const setView = (v: View) => {
+    setParams(v === "service" ? { vue: "service" } : {}, { replace: true });
+    window.scrollTo({ top: 0 });
+  };
 
   const [editing, setEditing] = useState<EditTarget | null>(null);
   const [sharing, setSharing] = useState(false);

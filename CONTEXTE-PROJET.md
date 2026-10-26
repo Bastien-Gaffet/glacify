@@ -18,15 +18,20 @@ Deux façons de prendre la commande, utilisables ensemble :
 Puis le **plan de service** : les commandes individuelles sont réorganisées en étapes
 (`contracts/plan.ts`) :
 1. sortir les contenants (2 cornets, 3 pots) ;
-2. les boules **parfum par parfum et étage par étage** : dans un cornet, la première boule doit
-   être posée avant la deuxième, donc on fait toutes les premières boules (un bac ouvert à la
-   fois), puis toutes les deuxièmes. Dans un pot, l'ordre est libre : les boules sont rangées
-   pour que les parfums les plus demandés tombent au même étage, donc moins de bacs ouverts ;
+2. les boules **un bac à la fois** (décision de Bastien, 26 oct. 2026) : on ouvre le parfum le
+   plus commandé, on sert toutes ses boules, on le remet au congélateur, puis le suivant. Chaque
+   bac n'est ouvert qu'une fois. L'ordre des boules est donc libre, dans un pot **comme dans un
+   cornet** (l'invité en est prévenu : « L'ordre des boules peut changer au service »). Pour ne
+   pas se perdre, chaque bac regroupe les personnes selon ce que leur contenant a déjà :
+   « Dans 3 cornets et 2 pots vides : … », « Sur mangue et chocolat : … » ;
 3. les suppléments ;
 4. servir, personne par personne (les invités voient « Servie » sur leur téléphone).
 
-La clé d'une étape cochée contient son nombre (`l0:<parfum>:3`) : si une commande arrive après
+La clé d'une étape cochée contient son nombre (`b:<parfum>:<boules>`) : si une commande arrive après
 coup, l'étape réapparaît non cochée.
+
+L'ancien plan « étage par étage » (toutes les premières boules, puis les deuxièmes ; l'ordre
+d'un cornet respecté) est gardé dans le tag `v0.1-minimaliste`.
 
 ## Ce qui est en place (v0.1, 25 octobre 2026)
 

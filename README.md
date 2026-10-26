@@ -3,8 +3,8 @@
 Prenez les commandes de glaces de tout le monde, servez-les dans le bon ordre.
 
 Chacun choisit sa glace sur son téléphone grâce à un lien (ou celui qui sert la saisit), puis
-Glacify transforme les commandes en plan de service : contenants, boules parfum par parfum et
-étage par étage, suppléments, puis distribution.
+Glacify transforme les commandes en plan de service : contenants, boules un bac à la fois
+(chaque bac ouvert une seule fois), suppléments, puis distribution.
 
 - Contexte, décisions et feuille de route : [`CONTEXTE-PROJET.md`](CONTEXTE-PROJET.md)
 - Code : [`app/`](app) (React + Vite + Hono/tRPC + Drizzle/MariaDB, Capacitor pour Android)

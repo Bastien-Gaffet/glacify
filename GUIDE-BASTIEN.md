@@ -202,10 +202,10 @@ pas encore été installé sur un vrai téléphone.
 - **Usage** : entre proches **et** petit commerce (stand, buvette), dans la même app.
 - **Prise de commande** : **les deux modes**. Un lien ou QR code (chacun commande sur son
   téléphone, sans compte), et la saisie par celui qui sert pour les autres.
-- **Plan de service** : contenants, puis boules **parfum par parfum et étage par étage**,
-  puis suppléments, puis distribution. Dans un cornet, l'ordre demandé des boules est
-  respecté. Dans un pot, il est réorganisé pour ouvrir moins de bacs. Une étape cochée se
-  décoche seule si une nouvelle commande la change.
+- **Plan de service** : contenants, puis boules **un bac à la fois** (chaque bac ouvert une
+  seule fois, du plus commandé au moins commandé ; décision du 26 octobre, qui remplace
+  l'« étage par étage »), puis suppléments, puis distribution. L'ordre des boules est libre,
+  même dans un cornet. Une étape cochée se décoche seule si une nouvelle commande la change.
 - **Sans compte pour commencer** (comme Babelibris). Un compte, plus tard, garde tout.
 - **Les invités** n'ont pas de compte. Un jeton secret gardé par leur navigateur leur permet
   de modifier ou d'annuler leurs glaces tant qu'elles ne sont pas servies. Les parfums épuisés

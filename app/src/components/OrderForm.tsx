@@ -133,6 +133,8 @@ export function OrderForm({
             })
           )}
         </div>
+        {/* The service opens one tub at a time, so the scoops go in tub order */}
+        {draft.scoops.length > 1 && <p className="-mt-1 mb-3 text-[13px] text-muted">L'ordre des boules peut changer au service.</p>}
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {flavors.map((f) => {
             const n = inDraft.get(f.id);
