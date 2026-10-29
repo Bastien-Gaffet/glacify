@@ -63,6 +63,8 @@ export default function App() {
             padding: "14px 18px",
             borderRadius: "20px",
           },
+          // Readable on the ink background
+          classNames: { description: "!text-onink/75" },
         }}
       />
       <ConfirmHost />

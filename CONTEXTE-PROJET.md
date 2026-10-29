@@ -30,6 +30,19 @@ Puis le **plan de service** : les commandes individuelles sont réorganisées en
 La clé d'une étape cochée contient son nombre (`b:<parfum>:<boules>`) : si une commande arrive après
 coup, l'étape réapparaît non cochée.
 
+**Mode service plein écran** (demandé par Bastien le 26 oct. 2026, pour un service plus ludique) :
+le bouton « Commencer le service » ouvre les étapes une par une, en plein écran
+(`src/pages/round/ServiceMode.tsx`, chargé à la demande avec la bibliothèque `motion`). On passe
+d'un écran à l'autre en validant ou en glissant. Chaque bac a son écran : on touche la tuile d'une
+personne quand sa boule est posée (la boule tombe dans le dessin), ou « Au congélateur ! » valide
+tout le bac d'un coup (le couvercle se referme, puis l'écran suivant arrive). Une commande tardive
+est annoncée par un bandeau et rouvre ses étapes. L'onglet Service garde la liste complète comme
+**récapitulatif**. Les étapes et les clés de coche sont dans `serviceSteps.ts`. Les coches partent
+au serveur l'une après l'autre, par lots, et le serveur verrouille la ligne (`useServiceState.ts`,
+`rounds.setCheck`) : des touches rapides ne se perdent pas.
+Si toucher chaque tuile devient trop lourd à l'usage, Bastien envisage de ne garder qu'un bouton
+« Bac terminé » par écran.
+
 L'ancien plan « étage par étage » (toutes les premières boules, puis les deuxièmes ; l'ordre
 d'un cornet respecté) est gardé dans le tag `v0.1-minimaliste`.
 
@@ -86,9 +99,14 @@ Les scripts de `deploy/` doivent rester en LF (`.gitattributes`) : extraits en C
 
 ## Feuille de route (proposée)
 
-1. Premier test sur téléphone (site et APK) et retours de Bastien.
-2. Prix (par contenant, par boule, par supplément) et total par tournée, pour l'usage commerce.
-3. (Seulement si Bastien le décide un jour) une version payante : le mécanisme est déjà là.
-4. Tutoriel interactif (visite guidée, comme Equiliz) joué sur une tournée de démonstration.
-5. Statistiques : parfums les plus demandés, pour savoir quoi racheter.
-6. Plusieurs serveurs sur la même tournée (partager l'accès au plan de service).
+1. Premier test sur téléphone (site et APK) et retours de Bastien, notamment sur le mode
+   service plein écran.
+2. **Nouvelle direction artistique** (demandée le 26 oct. 2026) : plus colorée, « glacier
+   italien populaire », moins minimaliste que « gelato chic ». Proposer des pistes à Bastien
+   avant de coder. Retour possible à l'ancienne DA par le tag `v0.1-minimaliste`.
+3. **D'autres façons de rendre le service ludique** (souhait de Bastien), après la nouvelle DA.
+4. Prix (par contenant, par boule, par supplément) et total par tournée, pour l'usage commerce.
+5. (Seulement si Bastien le décide un jour) une version payante : le mécanisme est déjà là.
+6. Tutoriel interactif (visite guidée, comme Equiliz) joué sur une tournée de démonstration.
+7. Statistiques : parfums les plus demandés, pour savoir quoi racheter.
+8. Plusieurs serveurs sur la même tournée (partager l'accès au plan de service).

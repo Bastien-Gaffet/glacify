@@ -133,18 +133,26 @@ export const roundsRouter = createRouter({
     return { success: true };
   }),
 
-  /** Ticks or unticks one service step. */
+  /**
+   * Ticks or unticks service steps (a whole tub at once, or one scoop). The
+   * row is locked so that quick taps sent back to back never lose a tick.
+   */
   setCheck: authedQuery
-    .input(z.object({ id, key: z.string().min(1).max(80), done: z.boolean() }))
+    .input(z.object({ id, keys: z.array(z.string().min(1).max(80)).min(1).max(400), done: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
-      const round = await ownedRound(ctx.user.id, input.id);
-      const checks = new Set(round.checks);
-      if (input.done) checks.add(input.key);
-      else checks.delete(input.key);
-      await getDb()
-        .update(rounds)
-        .set({ checks: [...checks].slice(-300) })
-        .where(eq(rounds.id, round.id));
+      await ownedRound(ctx.user.id, input.id);
+      await getDb().transaction(async (tx) => {
+        const [row] = await tx.select({ checks: rounds.checks }).from(rounds).where(eq(rounds.id, input.id)).for("update");
+        const checks = new Set(row!.checks);
+        for (const key of input.keys) {
+          if (input.done) checks.add(key);
+          else checks.delete(key);
+        }
+        await tx
+          .update(rounds)
+          .set({ checks: [...checks].slice(-1500) })
+          .where(eq(rounds.id, input.id));
+      });
       return { success: true };
     }),
 

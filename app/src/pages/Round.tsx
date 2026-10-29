@@ -26,6 +26,10 @@ export default function Round() {
     setParams(v === "service" ? { vue: "service" } : {}, { replace: true });
     window.scrollTo({ top: 0 });
   };
+  // The full-screen service has its own history entry: "back" closes it
+  const mode = view === "service" && params.get("etapes") === "1";
+  const setMode = (open: boolean) =>
+    open ? setParams({ vue: "service", etapes: "1" }) : setParams({ vue: "service" }, { replace: true });
 
   const [editing, setEditing] = useState<EditTarget | null>(null);
   const [sharing, setSharing] = useState(false);
@@ -107,7 +111,7 @@ export default function Round() {
       {view === "orders" ? (
         <Orders data={data} onEdit={setEditing} onShare={() => setSharing(true)} onService={() => setView("service")} />
       ) : (
-        <Service data={data} onClose={close} />
+        <Service data={data} onClose={close} mode={mode} onMode={setMode} />
       )}
 
       <OrderSheet roundId={id} menu={data.menu} target={editing} count={orders.length} onClose={() => setEditing(null)} />

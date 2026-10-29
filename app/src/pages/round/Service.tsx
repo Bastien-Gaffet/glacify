@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { Check, IceCreamBowl, IceCreamCone, RotateCcw } from "lucide-react";
+import { lazy, Suspense, type ReactNode } from "react";
+import { Check, ChevronRight, IceCreamBowl, IceCreamCone, Play, RotateCcw } from "lucide-react";
 import { clsx } from "clsx";
 import { buildPlan } from "@contracts/plan";
 import { IceCream } from "@/components/IceCream";
@@ -7,7 +7,12 @@ import { confirmDialog } from "@/components/Confirm";
 import { describeOrder, lookup, plural } from "@/lib/format";
 import { trpc } from "@/providers/trpc";
 import { showError } from "@/lib/errors";
-import type { RoundData, RoundOrder } from "./types";
+import type { RoundData } from "./types";
+import { useServiceState } from "./useServiceState";
+import { checkKey, groupLabel, serviceSteps, stepDone } from "./serviceSteps";
+
+// Loaded when the service starts: guests never download the animations
+const ServiceMode = lazy(() => import("./ServiceMode").then((m) => ({ default: m.ServiceMode })));
 
 function Step({ n, title, hint, children }: { n: number; title: ReactNode; hint?: string; children: ReactNode }) {
   return (
@@ -67,35 +72,32 @@ function Task({
 }
 
 /**
- * The service plan: containers to get out, scoops one tub at a time (each
- * tub opened once, people grouped by what their container already holds),
- * toppings, then each ice cream to hand over. A step's key carries
- * its count, so a step ticked before a new order arrived shows up again.
+ * The service tab: a button that starts the step-by-step service, then the
+ * recap of the plan (containers, one tub at a time, toppings, who wanted
+ * what), which can be ticked here too.
  */
-export function Service({ data, onClose }: { data: RoundData; onClose: () => void }) {
+export function Service({
+  data,
+  onClose,
+  mode,
+  onMode,
+}: {
+  data: RoundData;
+  onClose: () => void;
+  /** The full-screen service is open */
+  mode: boolean;
+  onMode: (open: boolean) => void;
+}) {
   const { round, orders, menu } = data;
   const l = lookup(menu);
   const plan = buildPlan(orders, menu);
-  const checks = new Set(round.checks);
+  const state = useServiceState(data);
+  const { checks } = state;
   const utils = trpc.useUtils();
-
-  // Ticks show at once; the server catches up behind
-  const patch = (fn: (d: RoundData) => RoundData) => utils.rounds.get.setData({ id: round.id }, (d) => (d ? fn(d) : d));
-  const refresh = () => utils.rounds.get.invalidate({ id: round.id });
-  const setCheck = trpc.rounds.setCheck.useMutation({ onError: (e) => (showError(e), refresh()) });
-  const setServed = trpc.rounds.setServed.useMutation({ onError: (e) => (showError(e), refresh()) });
-  const reset = trpc.rounds.resetService.useMutation({ onSuccess: refresh, onError: showError });
-
-  const toggle = (key: string) => {
-    const done = !checks.has(key);
-    patch((d) => ({ ...d, round: { ...d.round, checks: done ? [...d.round.checks, key] : d.round.checks.filter((k) => k !== key) } }));
-    setCheck.mutate({ id: round.id, key, done });
-  };
-  const serve = (o: RoundOrder) => {
-    const servedAt = o.servedAt ? null : new Date();
-    patch((d) => ({ ...d, orders: d.orders.map((x) => (x.id === o.id ? { ...x, servedAt } : x)) }));
-    setServed.mutate({ id: o.id, served: !!servedAt });
-  };
+  const reset = trpc.rounds.resetService.useMutation({
+    onSuccess: () => utils.rounds.get.invalidate({ id: round.id }),
+    onError: showError,
+  });
 
   if (plan.orders.length === 0) {
     return (
@@ -106,25 +108,38 @@ export function Service({ data, onClose }: { data: RoundData; onClose: () => voi
     );
   }
 
-  const served = plan.orders.filter((o) => o.servedAt).length;
+  const steps = serviceSteps(plan);
+  const doneSteps = steps.filter((s) => stepDone(s, state, plan)).length;
+  const served = plan.orders.filter((o) => state.isServed(o.id)).length;
   const total = plan.orders.length;
   const names = (people: { name: string }[]) => people.map((p) => p.name).join(", ");
-  /** "chocolat et vanille" */
-  const flavorList = (flavors: { name: string }[]) => {
-    const n = flavors.map((f) => f.name.toLowerCase());
-    return n.length > 1 ? `${n.slice(0, -1).join(", ")} et ${n.at(-1)}` : n[0]!;
-  };
-  /** "1 coupelle vide", "2 cornets et 1 pot vides" (the names are free, so no article) */
-  const emptyContainers = (people: { order: RoundOrder }[]) => {
-    const byContainer = new Map<number, number>();
-    for (const { order } of people) byContainer.set(order.containerId, (byContainer.get(order.containerId) ?? 0) + 1);
-    const parts = [...byContainer].map(([id, n]) => plural(n, l.container(id).name.toLowerCase()));
-    return `${parts.length > 1 ? `${parts.slice(0, -1).join(", ")} et ${parts.at(-1)}` : parts[0]} ${people.length > 1 ? "vides" : "vide"}`;
-  };
+  /** A tub or topping row: ticking it ticks the whole group, unticking clears its tiles too */
+  const toggleGroup = (key: string, tileKeys: string[], done: boolean) =>
+    done ? state.setChecks([key, ...tileKeys], false) : state.setChecks([key], true);
   let step = 1;
 
   return (
     <div className="space-y-8">
+      <button
+        onClick={() => onMode(true)}
+        className="flex w-full items-center gap-4 rounded-[28px] bg-ink p-5 text-left text-onink transition active:scale-[0.99]"
+      >
+        <span className="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-accent text-onaccent">
+          <Play size={24} fill="currentColor" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-display text-[21px] font-bold leading-tight">
+            {doneSteps === 0 ? "Commencer le service" : doneSteps === steps.length ? "Revoir le service" : "Reprendre le service"}
+          </span>
+          <span className="mt-0.5 block text-sm text-onink/70">
+            {doneSteps === 0
+              ? `Étape par étape, un bac à la fois · ${plural(steps.length, "étape")}`
+              : `${doneSteps} sur ${plural(steps.length, "étape")} faite${doneSteps > 1 ? "s" : ""}`}
+          </span>
+        </span>
+        <ChevronRight size={22} className="flex-none text-onink/60" />
+      </button>
+
       <div className="card p-4">
         <div className="mb-2.5 flex items-baseline justify-between">
           <p className="font-semibold">{served === total ? "Tout le monde est servi" : `${served} sur ${total} servi${served > 1 ? "s" : ""}`}</p>
@@ -143,40 +158,52 @@ export function Service({ data, onClose }: { data: RoundData; onClose: () => voi
         </div>
       </div>
 
+      <h2 className="eyebrow -mb-4">Récapitulatif</h2>
+
       <Step n={step++} title="Sortir les contenants">
-        {plan.containers.map(({ container, count }) => (
-          <Task
-            key={container.id}
-            done={checks.has(`c:${container.id}:${count}`)}
-            onToggle={() => toggle(`c:${container.id}:${count}`)}
-            lead={
-              <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-canvas">
-                {container.kind === "cone" ? <IceCreamCone size={20} /> : <IceCreamBowl size={20} />}
-              </span>
-            }
-            title={plural(count, container.name.toLowerCase())}
-            count={count}
-          />
-        ))}
+        {plan.containers.map(({ container, count }) => {
+          const key = checkKey.container(container.id, count);
+          return (
+            <Task
+              key={container.id}
+              done={checks.has(key)}
+              onToggle={() => state.setChecks([key], !checks.has(key))}
+              lead={
+                <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-canvas">
+                  {container.kind === "cone" ? <IceCreamCone size={20} /> : <IceCreamBowl size={20} />}
+                </span>
+              }
+              title={plural(count, container.name.toLowerCase())}
+              count={count}
+            />
+          );
+        })}
       </Step>
 
       <Step n={step++} title="Les boules" hint="Un bac à la fois : servez toutes ses boules, puis remettez-le au congélateur.">
-        {plan.tubs.map((tub) => {
-          const key = `b:${tub.flavorId}:${tub.scoops}`;
+        {steps.map((s) => {
+          if (s.kind !== "tub") return null;
+          const done = stepDone(s, state, plan);
           return (
             <Task
-              key={key}
-              done={checks.has(key)}
-              onToggle={() => toggle(key)}
-              lead={<span className="h-10 w-10 flex-none rounded-full shadow-[inset_0_0_0_1px_rgb(0_0_0/0.08)]" style={{ background: tub.flavor.color }} />}
-              title={tub.flavor.name}
-              sub={tub.groups.map((g, i) => (
+              key={s.id}
+              done={done}
+              onToggle={() =>
+                toggleGroup(
+                  s.key,
+                  s.tiles.map((t) => t.key),
+                  done,
+                )
+              }
+              lead={<span className="h-10 w-10 flex-none rounded-full shadow-[inset_0_0_0_1px_rgb(0_0_0/0.08)]" style={{ background: s.tub.flavor.color }} />}
+              title={s.tub.flavor.name}
+              sub={s.tub.groups.map((g, i) => (
                 <span key={i} className="mt-0.5 block">
-                  <span className="font-medium text-ink/80">{g.base.length ? `Sur ${flavorList(g.base)}` : `Dans ${emptyContainers(g.people)}`} : </span>
+                  <span className="font-medium text-ink/80">{groupLabel(g, menu)} : </span>
                   {g.people.map((p) => (p.count > 1 ? `${p.order.name} (${p.count} boules)` : p.order.name)).join(", ")}
                 </span>
               ))}
-              count={tub.scoops}
+              count={s.tub.scoops}
             />
           );
         })}
@@ -185,8 +212,19 @@ export function Service({ data, onClose }: { data: RoundData; onClose: () => voi
       {plan.toppingGroups.length > 0 && (
         <Step n={step++} title="Les suppléments">
           {plan.toppingGroups.map((g) => {
-            const key = `t:${g.topping.id}:${g.people.length}`;
-            return <Task key={key} done={checks.has(key)} onToggle={() => toggle(key)} title={g.topping.name} sub={names(g.people)} count={g.people.length} />;
+            const key = checkKey.topping(g.topping.id, g.people.length);
+            const tileKeys = g.people.map((o) => checkKey.toppingFor(g.topping.id, o.id));
+            const done = checks.has(key) || tileKeys.every((k) => checks.has(k));
+            return (
+              <Task
+                key={key}
+                done={done}
+                onToggle={() => toggleGroup(key, tileKeys, done)}
+                title={g.topping.name}
+                sub={names(g.people)}
+                count={g.people.length}
+              />
+            );
           })}
         </Step>
       )}
@@ -195,8 +233,8 @@ export function Service({ data, onClose }: { data: RoundData; onClose: () => voi
         {plan.orders.map((o) => (
           <Task
             key={o.id}
-            done={!!o.servedAt}
-            onToggle={() => serve(o)}
+            done={state.isServed(o.id)}
+            onToggle={() => state.serve(o.id, !state.isServed(o.id))}
             lead={
               <span className="flex w-9 flex-none justify-center">
                 <IceCream kind={l.container(o.containerId).kind} colors={plan.placed(o).map((id) => l.flavor(id).color)} size={30} />
@@ -221,6 +259,20 @@ export function Service({ data, onClose }: { data: RoundData; onClose: () => voi
             Fermer la tournée
           </button>
         </div>
+      )}
+
+      {mode && (
+        <Suspense fallback={null}>
+          <ServiceMode
+            data={data}
+            state={state}
+            onExit={() => onMode(false)}
+            onCloseRound={() => {
+              onClose();
+              onMode(false);
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );
