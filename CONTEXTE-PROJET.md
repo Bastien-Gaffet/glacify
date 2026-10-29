@@ -66,7 +66,8 @@ sur le modèle d'Equiliz et Babelibris (l'ancien code n'existait plus que sous f
   navigateur, `orders.guest_token`), liste de ceux qui ont déjà commandé.
 - **Bêta gratuite** (décidée par Bastien le 25 oct. 2026 : Glacify n'était pas pensée comme une
   app payante) : tout est gratuit et illimité pour tout le monde, comme la bêta d'Equiliz, et
-  l'interface ne parle ni de paiement ni de Premium (« Bêta gratuite » dans Moi). Seuls restent
+  l'interface ne parle ni de paiement ni de Premium, ni même de bêta (mention retirée de Moi
+  le 29 oct. 2026, à la demande de Bastien). Seuls restent
   les plafonds anti-abus de `HARD_LIMITS` (150 glaces par tournée, 8 par invité…).
   Le mécanisme d'une éventuelle version payante est gardé en sommeil : limites dans
   `contracts/plans.ts`, `users.premium`, `api/lib/entitlements.ts`. Il ne s'active que si le

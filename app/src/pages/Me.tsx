@@ -52,19 +52,20 @@ export default function Me() {
         </div>
       </div>
 
-      <div className="rounded-[28px] bg-ink p-5 text-onink">
-        <div className="flex items-center gap-2">
-          <Sparkles size={18} />
-          <p className="font-display text-lg font-bold">{user.beta ? "Bêta gratuite" : user.premium ? "Premium" : "Version gratuite"}</p>
-        </div>
-        <p className="mt-1 text-sm text-onink/70">
-          {user.beta
-            ? "Glacify est entièrement gratuit pendant la bêta : tournées et glaces illimitées."
-            : user.premium
+      {/* During the free beta nothing is said about plans (Bastien, 29 Oct 2026) */}
+      {!user.beta && (
+        <div className="rounded-[28px] bg-ink p-5 text-onink">
+          <div className="flex items-center gap-2">
+            <Sparkles size={18} />
+            <p className="font-display text-lg font-bold">{user.premium ? "Premium" : "Version gratuite"}</p>
+          </div>
+          <p className="mt-1 text-sm text-onink/70">
+            {user.premium
               ? "Tournées et glaces illimitées."
               : `${FREE_LIMITS.openRounds} tournée ouverte à la fois, ${FREE_LIMITS.ordersPerRound} glaces par tournée.`}
-        </p>
-      </div>
+          </p>
+        </div>
+      )}
 
       {user.anonymous && (
         <div className="card p-5">
@@ -115,7 +116,7 @@ export default function Me() {
         />
       </MenuGroup>
 
-      <p className="text-center text-xs text-muted">Glacify · version bêta</p>
+      <p className="text-center text-xs text-muted">Glacify</p>
 
       <Sheet
         open={open === "name"}

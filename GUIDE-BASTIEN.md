@@ -164,8 +164,8 @@ proche (un invité). À défaut, ouvrez le lien invité dans une fenêtre de nav
    l'invité, sa glace doit passer à « Servie, bonne dégustation ».
 7. **Fermer la tournée** (menu « … ») : le lien ne prend plus de commande, la tournée passe
    dans l'historique.
-8. **Moi** : « Créer un compte » garde la carte et les tournées. « Bêta gratuite » doit être
-   affiché.
+8. **Moi** : « Créer un compte » garde la carte et les tournées. Aucune mention de
+   bêta ni d'offre (retirée le 29 octobre).
 
 Notez tout ce qui ne va pas, même les petits détails visuels : ce sera la liste de la
 prochaine session.
