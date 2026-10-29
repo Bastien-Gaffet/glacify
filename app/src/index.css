@@ -16,11 +16,32 @@
   --on-accent: 255 255 255;
   --pistache: 76 150 88;
   --danger: 200 50 50;
+  /* Colour blocks of the pop look */
+  --sun: 255 181 71;
+  --mint: 159 224 200;
+  --lilac: 185 163 227;
+  --lemon: 245 224 106;
+  --font-display: "Bricolage Grotesque Variable";
+  --font-sans: "Inter Variable";
   color-scheme: light;
   /* System bars: the Android app (Capacitor) injects --safe-area-inset-*,
      browsers give env(); whichever exists wins */
   --safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
   --safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+}
+
+/* Pop: colour blocks, round type, black outlines (default look, Moi > Style) */
+:root[data-style="pop"] {
+  --surface: 247 243 238;
+  --sunken: 238 232 224;
+  --line: 232 226 219;
+  --ink: 28 25 23;
+  --muted: 138 129 123;
+  /* Framboise, brighter */
+  --accent: 217 65 106;
+  --pistache: 94 143 70;
+  --font-display: "Fredoka Variable";
+  --font-sans: "Nunito Variable";
 }
 
 html,
@@ -77,6 +98,37 @@ body {
   }
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium;
+  }
+}
+
+/* The pop look on the shared pieces: outlined like stickers, framboise buttons */
+@layer components {
+  [data-style="pop"] .card {
+    @apply rounded-[28px] border-[3px] border-ink bg-canvas;
+  }
+  [data-style="pop"] .btn {
+    @apply font-display text-[16px] font-semibold;
+  }
+  [data-style="pop"] .btn-ink,
+  [data-style="pop"] .btn-accent {
+    @apply border-[3px] border-ink bg-accent text-onaccent shadow-pop hover:bg-accent active:translate-y-[2px] active:scale-100 active:shadow-pop-sm;
+  }
+  [data-style="pop"] .btn-soft {
+    @apply border-[3px] border-ink bg-canvas hover:bg-surface;
+  }
+  [data-style="pop"] .field {
+    @apply border-[2.5px] border-ink/80 bg-canvas focus:border-ink focus:ring-accent/15;
+  }
+  [data-style="pop"] .title {
+    @apply text-[40px] font-bold leading-[1.02] tracking-normal;
+  }
+  /* Nunito reads thin at medium weights next to Fredoka */
+  [data-style="pop"] .font-medium,
+  [data-style="pop"] .font-semibold {
+    font-weight: 700;
+  }
+  [data-style="pop"] .eyebrow {
+    @apply text-[14px] font-extrabold normal-case tracking-normal;
   }
 }
 

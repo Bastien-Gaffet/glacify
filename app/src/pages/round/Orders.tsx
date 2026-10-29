@@ -38,7 +38,7 @@ export function Orders({
     <div className="space-y-6">
       {open && (
         <button onClick={onShare} className="card flex w-full items-center gap-4 p-4 text-left transition hover:bg-sunken/70">
-          <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-ink text-onink">
+          <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-ink text-onink pop:border-[2.5px] pop:border-ink pop:bg-lemon pop:text-ink">
             <QrCode size={22} />
           </span>
           <span className="min-w-0 flex-1">
@@ -123,7 +123,7 @@ export function Orders({
       )}
 
       {orders.length > 0 && (
-        <div className="sticky bottom-[calc(84px+var(--safe-bottom))] pt-2">
+        <div className="sticky bottom-[calc(84px+var(--safe-bottom))] pt-2 pop:bottom-[calc(108px+var(--safe-bottom))]">
           <button className="btn-ink w-full py-4 text-base shadow-soft" onClick={onService}>
             {t("goToService", { scoops: tn("scoops", orders.reduce((n, o) => n + o.scoops.length, 0)) })}
           </button>

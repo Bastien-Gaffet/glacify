@@ -93,7 +93,34 @@ sélecteur FR/EN. Le serveur n'écrit aucun texte : il renvoie des codes d'erreu
 choisie (`DEFAULT_FLAVORS` porte les deux noms), et « Remettre les parfums classiques » reconnaît
 un parfum sous ses deux noms.
 
-## Direction artistique : « gelato chic »
+## Direction artistique : « Pop » (par défaut) et « Épuré »
+
+Deux styles, au choix dans Moi > Préférences > Style (`src/lib/style.tsx`, stocké dans le
+navigateur, attribut `data-style` sur `<html>`). **Pop** est le style par défaut depuis le
+29 oct. 2026 ; **Épuré** est l'ancien « gelato chic », gardé tel quel.
+
+**Pop** (synthèse validée par Bastien le 29 oct. 2026, maquettes : canevas « Glacify – pistes de
+DA », écrans « Synthèse ») : base « Pop sorbet » avec des emprunts aux pistes Comptoir et
+Gelateria.
+- titres en Fredoka, texte en Nunito ; contours noirs épais (3 px) façon autocollant ;
+- aplats de couleurs : `sun` (orange, carte « Nouvelle tournée »), `mint` (tournée en cours),
+  `lemon` (tuile QR code), `lilac` (badge d'initiales penché) ; boutons principaux framboise avec
+  ombre pleine, **jamais noirs** (demande de Bastien) ;
+- accueil : badge d'initiales penché, carte « Nouvelle tournée » + bouton « C'est parti », chaque
+  tournée en cours avec sa barre de progression framboise (continue, arrondie) et sa tuile QR code
+  à côté, « La vitrine » (parfums disponibles en pastilles arrondies cerclées de noir, motifs) ;
+- barre du bas flottante, icônes + libellés, l'onglet actif rempli en framboise sur tout son
+  tiers, arrondi des deux côtés ;
+- service plein écran : progression en segments colorés (vert fait, framboise en cours) et « 2/6 »
+  ; l'écran d'un bac prend la couleur et le motif du parfum, avec le bac dessiné, « Bac 1 sur 4 »,
+  « 5 boules / 2 posées, encore 3 » et le nom en grand (texte blanc sur parfum foncé) ; les
+  personnes sont dans une carte blanche qui s'arrête à son contenu et défile à l'intérieur
+  au-dessus du bouton « Au congélateur ! » ; une tuile cochée passe en menthe et penche.
+- En code : variante Tailwind `pop:` et règles `[data-style="pop"]` dans `src/index.css` pour les
+  pièces communes (`.card`, `.btn-*`, `.field`, `.title`) ; l'accueil Pop est un composant à part
+  (`PopHome`), l'Épuré garde `PlainHome`.
+
+### Épuré (ancien « gelato chic »)
 
 Choisie par Bastien le 25 octobre 2026. Un comptoir clair et lumineux, une typographie forte, et
 **les couleurs viennent des parfums** :
@@ -121,10 +148,11 @@ Les scripts de `deploy/` doivent rester en LF (`.gitattributes`) : extraits en C
 
 1. Premier test sur téléphone (site et APK) et retours de Bastien, notamment sur le mode
    service plein écran.
-2. **Nouvelle direction artistique** (demandée le 26 oct. 2026) : plus colorée, « glacier
-   italien populaire », moins minimaliste que « gelato chic ». Proposer des pistes à Bastien
-   avant de coder. Retour possible à l'ancienne DA par le tag `v0.1-minimaliste`.
-3. **D'autres façons de rendre le service ludique** (souhait de Bastien), après la nouvelle DA.
+2. ~~Nouvelle direction artistique~~ : faite le 29 oct. 2026 (style Pop, voir plus haut).
+   Retours de Bastien sur téléphone à recueillir.
+3. **D'autres façons de rendre l'app ludique** (souhait de Bastien) : retours physiques
+   (vibrations, ressorts), états vides illustrés, animation à l'arrivée d'une commande, bilan de
+   fin de tournée.
 4. Prix (par contenant, par boule, par supplément) et total par tournée, pour l'usage commerce.
 5. (Seulement si Bastien le décide un jour) une version payante : le mécanisme est déjà là.
 6. Tutoriel interactif (visite guidée, comme Equiliz) joué sur une tournée de démonstration.

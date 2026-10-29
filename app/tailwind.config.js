@@ -16,15 +16,27 @@ export default {
         onaccent: "rgb(var(--on-accent) / <alpha-value>)",
         pistache: "rgb(var(--pistache) / <alpha-value>)",
         danger: "rgb(var(--danger) / <alpha-value>)",
+        // Pop look: colour blocks
+        sun: "rgb(var(--sun) / <alpha-value>)",
+        mint: "rgb(var(--mint) / <alpha-value>)",
+        lilac: "rgb(var(--lilac) / <alpha-value>)",
+        lemon: "rgb(var(--lemon) / <alpha-value>)",
       },
       fontFamily: {
-        display: ['"Bricolage Grotesque Variable"', "system-ui", "sans-serif"],
-        sans: ['"Inter Variable"', "system-ui", "sans-serif"],
+        // Set per look in src/index.css
+        display: ["var(--font-display)", "system-ui", "sans-serif"],
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
       },
       boxShadow: {
         soft: "0 1px 2px rgb(28 25 23 / 0.04), 0 8px 24px -8px rgb(28 25 23 / 0.10)",
+        // Pop look: a sticker's hard shadow
+        pop: "0 4px 0 rgb(var(--ink))",
+        "pop-sm": "0 2px 0 rgb(var(--ink))",
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // pop:… applies only in the pop look (html[data-style="pop"])
+    ({ addVariant }) => addVariant("pop", ':is([data-style="pop"] &)'),
+  ],
 };

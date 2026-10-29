@@ -25,7 +25,7 @@ function ScrollTop() {
 function Shell() {
   return (
     <>
-      <main className="mx-auto max-w-2xl px-5 pb-[calc(96px+var(--safe-bottom))] pt-6">
+      <main className="mx-auto max-w-2xl px-5 pb-[calc(96px+var(--safe-bottom))] pt-6 pop:pb-[calc(124px+var(--safe-bottom))]">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/r/:id" element={<Round />} />

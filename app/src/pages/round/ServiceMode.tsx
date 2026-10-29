@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
@@ -6,10 +6,11 @@ import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { clsx } from "clsx";
 import { buildPlan } from "@contracts/plan";
 import { IceCream } from "@/components/IceCream";
-import { PatternOverlay } from "@/components/FlavorPattern";
+import { PatternMarks, PatternOverlay } from "@/components/FlavorPattern";
 import type { ScoopLook } from "@contracts/menu";
 import { describeOrder, lookup, plural } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { usePop } from "@/lib/style";
 import { groupLabel, serviceSteps, stepDone, tileDone, type ServiceStep } from "./serviceSteps";
 import type { ServiceState } from "./useServiceState";
 import type { RoundData, RoundOrder } from "./types";
@@ -94,7 +95,83 @@ function FreezerParty({ look, label }: { look: ScoopLook; label: string }) {
   );
 }
 
+/** The open tub, drawn like a sticker: the flavor heaped over a white tub */
+function TubArt({ look }: { look: ScoopLook }) {
+  const clip = useId();
+  return (
+    <motion.svg
+      viewBox="0 0 120 100"
+      width="104"
+      height="87"
+      aria-hidden="true"
+      className="flex-none"
+      initial={{ scale: 0.5, rotate: -24 }}
+      animate={{ scale: 1, rotate: -6 }}
+      transition={{ type: "spring", stiffness: 380, damping: 16 }}
+    >
+      <clipPath id={clip}>
+        <path d="M14 42 Q60 4 106 42 Z" />
+      </clipPath>
+      {/* A white edge, like a sticker: the tub stands out on any flavor */}
+      <g fill="#FFFFFF" stroke="#FFFFFF" strokeWidth="10" strokeLinejoin="round">
+        <path d="M14 42 Q60 4 106 42 Z" />
+        <rect x="10" y="40" width="100" height="54" rx="12" />
+      </g>
+      <path d="M14 42 Q60 4 106 42 Z" fill={look.color} />
+      <g clipPath={`url(#${clip})`}>
+        <g transform="translate(10 4) scale(1)">
+          <PatternMarks pattern={look.pattern} accent={look.accent} />
+        </g>
+      </g>
+      <path d="M14 42 Q60 4 106 42 Z" fill="none" stroke="rgb(var(--ink))" strokeWidth="3.5" strokeLinejoin="round" />
+      <rect x="10" y="40" width="100" height="54" rx="12" fill="#FFFFFF" stroke="rgb(var(--ink))" strokeWidth="3.5" />
+      <rect x="11.75" y="54" width="96.5" height="9" fill="rgb(var(--accent))" />
+    </motion.svg>
+  );
+}
+
+/** The flavor's pattern spread over the whole screen, marks at a readable size */
+function PatternField({ look }: { look: ScoopLook }) {
+  const id = useId();
+  if (look.pattern === "none") return null;
+  return (
+    <svg className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
+      <defs>
+        <pattern id={id} width="150" height="150" patternUnits="userSpaceOnUse">
+          <g transform="scale(1.5)">
+            <PatternMarks pattern={look.pattern} accent={look.accent} />
+          </g>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill={`url(#${id})`} opacity="0.85" />
+    </svg>
+  );
+}
+
+/** Ink or white, whichever reads better on this colour */
+function inkOn(hex: string) {
+  const n = parseInt(hex.replace("#", "").padEnd(6, "0").slice(0, 6), 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? "rgb(var(--ink))" : "#FFFFFF";
+}
+
 function Heading({ eyebrow, title, sub, lead }: { eyebrow: string; title: ReactNode; sub?: ReactNode; lead?: ReactNode }) {
+  if (usePop())
+    return (
+      <div className="px-1.5">
+        <div className="flex items-center gap-3.5">
+          {lead}
+          <div className="min-w-0">
+            <span className="inline-block rounded-full border-[2.5px] border-ink bg-accent px-3 py-0.5 font-display text-[14px] font-semibold text-onaccent">
+              {eyebrow}
+            </span>
+            {lead && sub && <p className="mt-2 text-[17px] font-extrabold leading-tight">{sub}</p>}
+          </div>
+        </div>
+        <h2 className="mt-3 break-words font-display text-[44px] font-bold leading-[0.95]">{title}</h2>
+        {!lead && sub && <p className="mt-2 text-[17px] font-extrabold leading-tight">{sub}</p>}
+      </div>
+    );
   return (
     <div className="mb-6 flex items-center gap-4">
       {lead}
@@ -108,7 +185,21 @@ function Heading({ eyebrow, title, sub, lead }: { eyebrow: string; title: ReactN
 }
 
 /** A big tappable tile: one person (or one kind of container) */
-function Tile({ done, onTap, children, label }: { done: boolean; onTap: () => void; children: ReactNode; label: string }) {
+function Tile({
+  done,
+  onTap,
+  children,
+  label,
+  tilt = 0,
+}: {
+  done: boolean;
+  onTap: () => void;
+  children: ReactNode;
+  label: string;
+  /** Pop look: a ticked tile leans this many degrees */
+  tilt?: number;
+}) {
+  const pop = usePop();
   return (
     <motion.button
       layout
@@ -116,15 +207,21 @@ function Tile({ done, onTap, children, label }: { done: boolean; onTap: () => vo
       aria-pressed={done}
       aria-label={label}
       whileTap={{ scale: 0.94 }}
+      animate={{ rotate: pop && done ? tilt : 0 }}
+      transition={{ type: "spring", stiffness: 500, damping: 18 }}
       className={clsx(
-        "relative flex min-h-[112px] flex-col items-center justify-end gap-1.5 rounded-3xl px-2 pb-3 pt-4 text-center transition-colors",
-        done ? "bg-pistache/15" : "bg-surface",
+        "relative flex min-h-[112px] flex-col items-center justify-end gap-1.5 px-2 pb-3 pt-4 text-center transition-colors",
+        pop ? "rounded-[22px] border-[3px] border-ink" : "rounded-3xl",
+        done ? (pop ? "bg-mint" : "bg-pistache/15") : pop ? "bg-canvas" : "bg-surface",
       )}
     >
       <AnimatePresence>
         {done && (
           <motion.span
-            className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-pistache text-white"
+            className={clsx(
+              "absolute flex items-center justify-center rounded-full bg-pistache text-white",
+              pop ? "-right-2 -top-2.5 h-7 w-7 border-[2.5px] border-ink" : "right-2.5 top-2.5 h-7 w-7",
+            )}
             initial={{ scale: 0, rotate: -45 }}
             animate={{ scale: 1, rotate: 0 }}
             exit={{ scale: 0 }}
@@ -157,6 +254,7 @@ export function ServiceMode({
 }) {
   // `t` names the tiles here: the translator is `L`
   const L = useI18n();
+  const pop = usePop();
   const { menu, round } = data;
   const l = lookup(menu);
   const plan = buildPlan(data.orders, menu, L.t("removedFlavor"));
@@ -229,6 +327,8 @@ export function ServiceMode({
       .map((f) => l.flavor(f));
   };
 
+  // Heading and tiles apart: in the pop look the tiles sit on a white card
+  let head: ReactNode = null;
   let content: ReactNode;
   let primary: { label: string; onClick?: () => void } | null = null;
 
@@ -273,16 +373,17 @@ export function ServiceMode({
     );
   } else if (step.kind === "containers") {
     const total = step.items.reduce((n, i) => n + i.count, 0);
+    head = <Heading eyebrow={L.t("firstStep")} title={L.t("getOut")} sub={L.tn("icesToMake", total)} />;
     content = (
       <>
-        <Heading eyebrow={L.t("firstStep")} title={L.t("getOut")} sub={L.tn("icesToMake", total)} />
         <div className="grid grid-cols-2 gap-3">
-          {step.items.map((i) => {
+          {step.items.map((i, k) => {
             const done = state.checks.has(i.key);
             return (
               <Tile
                 key={i.key}
                 done={done}
+                tilt={k % 2 ? 2 : -2}
                 label={plural(i.count, i.container.name.toLowerCase())}
                 onTap={() => (buzz(), state.setChecks([i.key], !done))}
               >
@@ -324,8 +425,20 @@ export function ServiceMode({
       state.setChecks(last ? [t.key, step.key] : [t.key], true);
       if (last) celebrate(tub.flavor, L.t("toFreezer"));
     };
-    content = (
-      <>
+    head = pop ? (
+      <Heading
+        eyebrow={L.t("tubOf", { i: step.index + 1, n: plan.tubs.length })}
+        title={tub.flavor.name}
+        sub={
+          <>
+            {L.tn("scoops", tub.scoops)}
+            <br />
+            {placed < tub.scoops ? `${L.tn("placed", placed)}, ${L.t("stillN", { n: tub.scoops - placed })}` : L.tn("placed", placed)}
+          </>
+        }
+        lead={<TubArt key={tub.flavorId} look={tub.flavor} />}
+      />
+    ) : (
         <Heading
           eyebrow={L.t("tubOf", { i: step.index + 1, n: plan.tubs.length })}
           title={tub.flavor.name}
@@ -343,19 +456,20 @@ export function ServiceMode({
             </motion.span>
           }
         />
-        <p className="-mt-3 mb-5 text-[15px]">
-          {L.t("openTub")}
-        </p>
+    );
+    content = (
+      <>
+        {!pop && <p className="-mt-3 mb-5 text-[15px]">{L.t("openTub")}</p>}
         <div className="space-y-6">
           {tub.groups.map((g, gi) => (
             <section key={gi}>
-              <h3 className="mb-2.5 font-semibold">{groupLabel(g, menu)}</h3>
+              <h3 className="mb-2.5 font-semibold pop:font-display pop:text-[18px]">{groupLabel(g, menu)}</h3>
               <div className="grid grid-cols-3 gap-2.5">
-                {g.people.map(({ order, count }) => {
+                {g.people.map(({ order, count }, k) => {
                   const t = step.tiles.find((x) => x.order.id === order.id)!;
                   const done = tileDone(state, step.key, t.key);
                   return (
-                    <Tile key={t.key} done={done} onTap={() => tap(t)} label={count > 1 ? `${order.name}, ${L.tn("scoops", count)}` : order.name}>
+                    <Tile key={t.key} done={done} tilt={k % 2 ? 2 : -2} onTap={() => tap(t)} label={count > 1 ? `${order.name}, ${L.tn("scoops", count)}` : order.name}>
                       <IceCream
                         kind={l.container(order.containerId).kind}
                         colors={tubColors(order, step.index, done)}
@@ -383,20 +497,21 @@ export function ServiceMode({
           },
         };
   } else if (step.kind === "toppings") {
+    head = <Heading eyebrow={L.t("finishingTouch")} title={L.t("theToppings")} sub={L.t("tapWhenTopped")} />;
     content = (
       <>
-        <Heading eyebrow={L.t("finishingTouch")} title={L.t("theToppings")} sub={L.t("tapWhenTopped")} />
         <div className="space-y-6">
           {step.groups.map((g) => (
             <section key={g.key}>
-              <h3 className="mb-2.5 font-semibold">{g.topping.name}</h3>
+              <h3 className="mb-2.5 font-semibold pop:font-display pop:text-[18px]">{g.topping.name}</h3>
               <div className="grid grid-cols-3 gap-2.5">
-                {g.tiles.map((t) => {
+                {g.tiles.map((t, k) => {
                   const done = tileDone(state, g.key, t.key);
                   return (
                     <Tile
                       key={t.key}
                       done={done}
+                      tilt={k % 2 ? 2 : -2}
                       label={t.order.name}
                       onTap={() => {
                         buzz();
@@ -435,20 +550,23 @@ export function ServiceMode({
     // Who is still waiting comes first; served ice creams slide to the end
     const ordered = [...plan.orders].sort((a, b) => Number(state.isServed(a.id)) - Number(state.isServed(b.id)));
     const waiting = plan.orders.filter((o) => !state.isServed(o.id)).length;
+    head = (
+      <Heading
+        eyebrow={L.t("lastStep")}
+        title={L.t("serveTitle")}
+        sub={waiting ? L.t("tapWhenGiven", { n: waiting }) : L.t("everyoneServedDot")}
+      />
+    );
     content = (
       <>
-        <Heading
-          eyebrow={L.t("lastStep")}
-          title={L.t("serveTitle")}
-          sub={waiting ? L.t("tapWhenGiven", { n: waiting }) : L.t("everyoneServedDot")}
-        />
         <div className="grid grid-cols-2 gap-2.5">
-          {ordered.map((o) => {
+          {ordered.map((o, k) => {
             const served = state.isServed(o.id);
             return (
               <Tile
                 key={o.id}
                 done={served}
+                tilt={k % 2 ? 2 : -2}
                 label={`${o.name}, ${describeOrder(menu, o)}`}
                 onTap={() => {
                   buzz(served ? 12 : 25);
@@ -471,33 +589,47 @@ export function ServiceMode({
     primary = waiting ? { label: L.t("stillToServe", { n: waiting }) } : { label: L.t("finish"), onClick: next };
   }
 
+  // Pop look: a tub's screen takes the flavor's colour and pattern
+  const flavorBg = pop && step?.kind === "tub" ? step.tub.flavor : null;
+
   // On the body: the page's entrance animation would otherwise trap this
   // fixed layer under the header and the bottom bar
   return createPortal(
     <MotionConfig reducedMotion="user">
       <div
-        className="fixed inset-0 z-[60] flex flex-col bg-canvas"
-        style={{ paddingTop: "var(--safe-top)", paddingBottom: "var(--safe-bottom)" }}
+        className={clsx("fixed inset-0 z-[60] flex flex-col transition-colors duration-500", pop && !flavorBg ? "bg-surface" : "bg-canvas")}
+        style={{ paddingTop: "var(--safe-top)", paddingBottom: "var(--safe-bottom)", background: flavorBg?.color }}
         role="dialog"
         aria-modal="true"
         aria-label={L.t("serviceTab")}
       >
-        <header className="flex items-center gap-3 px-3 pt-2">
-          <button className="icon-btn text-ink" onClick={onExit} aria-label={L.t("quitService")}>
-            <X size={22} />
+        {flavorBg && <PatternField look={flavorBg} />}
+        <header className="relative flex items-center gap-3 px-3 pt-2 pop:gap-2.5 pop:px-[18px] pop:pt-4">
+          <button
+            className="icon-btn text-ink pop:rounded-2xl pop:border-[3px] pop:border-ink pop:bg-canvas pop:hover:bg-canvas"
+            onClick={onExit}
+            aria-label={L.t("quitService")}
+          >
+            <X size={22} strokeWidth={pop ? 2.8 : 2} />
           </button>
-          <div className="flex flex-1 gap-1" aria-hidden="true">
+          <div className="flex flex-1 gap-1 pop:gap-[5px]" aria-hidden="true">
             {steps.map((s, i) => (
               <span
                 key={s.id}
                 className={clsx(
-                  "h-1.5 flex-1 rounded-full transition-colors duration-300",
-                  isDone(s) ? "bg-pistache" : i === index ? "bg-ink" : "bg-sunken",
+                  "flex-1 rounded-full transition-colors duration-300",
+                  pop ? "h-3 border-[2.5px] border-ink" : "h-1.5",
+                  isDone(s) ? "bg-pistache" : i === index ? (pop ? "bg-accent" : "bg-ink") : pop ? "bg-canvas" : "bg-sunken",
                 )}
               />
             ))}
           </div>
-          <span className="tabular w-12 text-right text-sm font-medium text-muted">
+          <span
+            className={clsx(
+              "tabular text-right",
+              pop ? "flex-none rounded-full bg-ink px-2.5 py-1 font-display text-[14px] font-semibold text-onink" : "w-12 text-sm font-medium text-muted",
+            )}
+          >
             {Math.min(index + 1, steps.length)}/{steps.length}
           </span>
         </header>
@@ -520,24 +652,49 @@ export function ServiceMode({
                 if ((info.offset.x < -80 || info.velocity.x < -500) && index < steps.length) go(index + 1, 1);
                 else if ((info.offset.x > 80 || info.velocity.x > 500) && index > 0) go(index - 1, -1);
               }}
-              className="absolute inset-0 overflow-y-auto px-5 pb-8 pt-5"
+              className={clsx(
+                "absolute inset-0",
+                pop && step ? "flex flex-col px-[14px] pt-5" : "overflow-y-auto px-5 pb-8 pt-5",
+              )}
             >
-              {content}
+              {pop && step ? (
+                <>
+                  <div style={flavorBg ? { color: inkOn(flavorBg.color) } : undefined}>{head}</div>
+                  {/* The card ends with its tiles; past the screen they scroll inside it */}
+                  <div className="mt-5 min-h-0 shrink overflow-y-auto rounded-[34px] border-[3px] border-ink bg-canvas px-4 pb-5 pt-5">
+                    {content}
+                  </div>
+                </>
+              ) : (
+                <>
+                  {head}
+                  {content}
+                </>
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
 
         {step && (
-          <footer className="flex items-center gap-2 border-t border-line/70 px-3 py-3">
-            <button className="icon-btn text-ink disabled:opacity-30" onClick={() => go(index - 1, -1)} disabled={index === 0} aria-label={L.t("prevStep")}>
+          <footer className="relative flex items-center gap-2 border-t border-line/70 px-3 py-3 pop:gap-2.5 pop:border-0 pop:px-[18px] pop:pb-6 pop:pt-4">
+            <button
+              className="icon-btn text-ink disabled:opacity-30 pop:border-[3px] pop:border-ink pop:bg-canvas pop:hover:bg-canvas"
+              onClick={() => go(index - 1, -1)}
+              disabled={index === 0}
+              aria-label={L.t("prevStep")}
+            >
               <ChevronLeft size={24} />
             </button>
             {primary && (
-              <button className="btn-ink min-h-[52px] flex-1 text-[16px]" onClick={primary.onClick} disabled={!primary.onClick}>
+              <button className="btn-ink min-h-[52px] flex-1 text-[16px] pop:text-[19px] pop:font-bold" onClick={primary.onClick} disabled={!primary.onClick}>
                 {primary.label}
               </button>
             )}
-            <button className="icon-btn text-ink" onClick={() => go(index + 1, 1)} aria-label={L.t("nextStep")}>
+            <button
+              className="icon-btn text-ink pop:border-[3px] pop:border-ink pop:bg-canvas pop:hover:bg-canvas"
+              onClick={() => go(index + 1, 1)}
+              aria-label={L.t("nextStep")}
+            >
               <ChevronRight size={24} />
             </button>
           </footer>

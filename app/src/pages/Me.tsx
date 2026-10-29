@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Check, KeyRound, Languages, LogOut, MonitorSmartphone, PencilLine, Sparkles, UserPlus } from "lucide-react";
+import { Check, KeyRound, Languages, LogOut, MonitorSmartphone, Paintbrush, PencilLine, Sparkles, UserPlus } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/PageHeader";
@@ -11,11 +11,13 @@ import { FREE_LIMITS } from "@contracts/plans";
 import { initials } from "@/lib/format";
 import { showError } from "@/lib/errors";
 import { LANGS, useI18n } from "@/lib/i18n";
+import { STYLES, useStyle } from "@/lib/style";
 
-type Open = null | "name" | "account" | "password" | "lang";
+type Open = null | "name" | "account" | "password" | "lang" | "style";
 
 export default function Me() {
   const { t, lang, setLang } = useI18n();
+  const { style, setStyle } = useStyle();
   const { user, logout } = useAuth();
   const [open, setOpen] = useState<Open>(null);
   const [name, setName] = useState("");
@@ -47,7 +49,7 @@ export default function Me() {
       <PageHeader title={t("navMe")} />
 
       <div className="flex items-center gap-4">
-        <span className="flex h-16 w-16 flex-none items-center justify-center rounded-full bg-ink font-display text-2xl font-bold text-onink">{initials(user.name)}</span>
+        <span className="flex h-16 w-16 flex-none items-center justify-center rounded-full bg-ink font-display text-2xl font-bold text-onink pop:rotate-6 pop:rounded-[20px] pop:border-[3px] pop:border-ink pop:bg-lilac pop:text-ink">{initials(user.name)}</span>
         <div className="min-w-0">
           <p className="truncate font-display text-[22px] font-bold">{user.name}</p>
           <p className="truncate text-sm text-muted">{user.anonymous ? t("noAccountDevice") : user.email}</p>
@@ -83,6 +85,7 @@ export default function Me() {
 
       <MenuGroup title={t("preferences")}>
         <MenuRow icon={Languages} label={t("language")} value={LANGS.find((l) => l.code === lang)!.name} onClick={() => setOpen("lang")} />
+        <MenuRow icon={Paintbrush} label={t("style")} value={t(STYLES.find((s) => s.code === style)!.name)} onClick={() => setOpen("style")} />
       </MenuGroup>
 
       {!user.anonymous && (
@@ -216,6 +219,26 @@ export default function Me() {
             >
               <span className="flex-1">{l.name}</span>
               {l.code === lang && <Check size={19} className="text-pistache" strokeWidth={2.6} />}
+            </button>
+          ))}
+        </MenuGroup>
+      </Sheet>
+
+      <Sheet open={open === "style"} onClose={() => setOpen(null)} title={t("style")}>
+        <MenuGroup>
+          {STYLES.map((s) => (
+            <button
+              key={s.code}
+              type="button"
+              onClick={() => (setStyle(s.code), setOpen(null))}
+              className="flex min-h-[68px] w-full items-center gap-3 px-4 py-2 text-left transition hover:bg-sunken/60"
+              aria-pressed={s.code === style}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block font-medium">{t(s.name)}</span>
+                <span className="block text-sm text-muted">{t(s.sub)}</span>
+              </span>
+              {s.code === style && <Check size={19} className="text-pistache" strokeWidth={2.6} />}
             </button>
           ))}
         </MenuGroup>

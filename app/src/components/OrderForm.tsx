@@ -149,7 +149,7 @@ export function OrderForm({
                 disabled={full || out}
                 onClick={() => set({ scoops: [...draft.scoops, f.id] })}
                 className={clsx(
-                  "relative flex min-h-[76px] flex-col items-start justify-end overflow-hidden rounded-2xl p-2.5 text-left text-[13px] font-semibold leading-tight transition active:scale-95",
+                  "relative flex min-h-[76px] flex-col items-start justify-end overflow-hidden rounded-2xl p-2.5 text-left text-[13px] font-semibold leading-tight transition active:scale-95 pop:rounded-[20px] pop:border-[3px] pop:border-ink pop:font-display pop:text-[14px]",
                   full && !n && "opacity-40",
                   out && "opacity-40",
                 )}

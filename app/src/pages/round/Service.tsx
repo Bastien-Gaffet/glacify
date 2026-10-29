@@ -125,20 +125,20 @@ export function Service({
     <div className="space-y-8">
       <button
         onClick={() => onMode(true)}
-        className="flex w-full items-center gap-4 rounded-[28px] bg-ink p-5 text-left text-onink transition active:scale-[0.99]"
+        className="flex w-full items-center gap-4 rounded-[28px] bg-ink p-5 text-left text-onink transition active:scale-[0.99] pop:border-[3px] pop:border-ink pop:bg-sun pop:text-ink"
       >
-        <span className="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-accent text-onaccent">
+        <span className="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-accent text-onaccent pop:border-[3px] pop:border-ink">
           <Play size={24} fill="currentColor" />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block font-display text-[21px] font-bold leading-tight">
             {doneSteps === 0 ? t("startService") : doneSteps === steps.length ? t("reviewService") : t("resumeService")}
           </span>
-          <span className="mt-0.5 block text-sm text-onink/70">
+          <span className="mt-0.5 block text-sm text-onink/70 pop:text-ink/75">
             {doneSteps === 0 ? t("startServiceSub", { steps: tn("steps", steps.length) }) : tn("stepsDone", doneSteps, { total: steps.length })}
           </span>
         </span>
-        <ChevronRight size={22} className="flex-none text-onink/60" />
+        <ChevronRight size={22} className="flex-none text-onink/60 pop:text-ink/60" />
       </button>
 
       <div className="card p-4">
@@ -253,10 +253,10 @@ export function Service({
       </Step>
 
       {served === total && round.status === "open" && (
-        <div className="page-in rounded-[28px] bg-ink p-6 text-center text-onink">
+        <div className="page-in rounded-[28px] bg-ink p-6 text-center text-onink pop:border-[3px] pop:border-ink pop:bg-mint pop:text-ink">
           <p className="font-display text-[22px] font-bold">{t("enjoy")}</p>
-          <p className="mt-1 text-sm text-onink/70">{t("allServedClose")}</p>
-          <button className="btn mt-4 bg-onink px-6 text-ink hover:bg-onink/90" onClick={onClose}>
+          <p className="mt-1 text-sm text-onink/70 pop:text-ink/75">{t("allServedClose")}</p>
+          <button className="btn mt-4 bg-onink px-6 text-ink hover:bg-onink/90 pop:border-[3px] pop:border-ink pop:bg-accent pop:text-onaccent pop:shadow-pop" onClick={onClose}>
             {t("closeRound")}
           </button>
         </div>
