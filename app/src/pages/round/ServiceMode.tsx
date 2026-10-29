@@ -11,18 +11,12 @@ import type { ScoopLook } from "@contracts/menu";
 import { describeOrder, lookup, plural } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { usePop } from "@/lib/style";
+import { buzz } from "@/lib/feel";
+import { play } from "@/lib/sound";
+import { RecapBody } from "./Recap";
 import { groupLabel, serviceSteps, stepDone, tileDone, type ServiceStep } from "./serviceSteps";
 import type { ServiceState } from "./useServiceState";
 import type { RoundData, RoundOrder } from "./types";
-
-/** A short buzz on phones that can, nothing elsewhere */
-const buzz = (ms = 12) => {
-  try {
-    navigator.vibrate?.(ms);
-  } catch {
-    /* not allowed here */
-  }
-};
 
 const slide = {
   enter: (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0.4 }),
@@ -289,7 +283,8 @@ export function ServiceMode({
   nextRef.current = next;
 
   const celebrate = (look: ScoopLook, label: string) => {
-    buzz(30);
+    buzz("success");
+    play("tada");
     setParty({ look, label, n: Date.now() });
     setTimeout(
       () => {
@@ -315,6 +310,8 @@ export function ServiceMode({
     for (const o of data.orders) {
       if (seen.current.has(o.id)) continue;
       seen.current.add(o.id);
+      buzz("success");
+      play("ding");
       toast(L.t("justOrdered", { name: o.name }), { description: describeOrder(menu, o) });
     }
   }, [data.orders, menu]);
@@ -337,29 +334,30 @@ export function ServiceMode({
     const colors = plan.totals.map((t) => t.flavor.color);
     content = (
       <div className="flex min-h-full flex-col items-center justify-center text-center">
-        <div className="relative mb-8 flex items-end gap-1">
-          {left === 0 && <Confetti colors={colors.length ? colors : ["rgb(var(--accent))"]} count={28} />}
-          {plan.orders.slice(0, 5).map((o, i) => (
-            <motion.div key={o.id} initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 + i * 0.07, type: "spring", stiffness: 400, damping: 20 }}>
-              <IceCream kind={l.container(o.containerId).kind} colors={plan.placed(o).map((f) => l.flavor(f))} size={i === 2 ? 64 : 50} />
-            </motion.div>
-          ))}
-        </div>
         {left === 0 ? (
-          <>
-            <h2 className="title">{L.t("enjoy")}</h2>
-            <p className="mt-2 text-[15px] text-muted">{L.t("allIcesServed")}</p>
-            <div className="mt-8 flex w-full max-w-xs flex-col gap-2.5">
-              {round.status === "open" && (
-                <button className="btn-ink" onClick={onCloseRound}>
-                  {L.t("closeRound")}
-                </button>
-              )}
-              <button className="btn-soft" onClick={onExit}>
-                {L.t("seeRecap")}
+          <div className="relative h-0 w-full">
+            <Confetti colors={colors.length ? colors : ["rgb(var(--accent))"]} count={28} />
+          </div>
+        ) : (
+          <div className="relative mb-8 flex items-end gap-1">
+            {plan.orders.slice(0, 5).map((o, i) => (
+              <motion.div key={o.id} initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 + i * 0.07, type: "spring", stiffness: 400, damping: 20 }}>
+                <IceCream kind={l.container(o.containerId).kind} colors={plan.placed(o).map((f) => l.flavor(f))} size={i === 2 ? 64 : 50} />
+              </motion.div>
+            ))}
+          </div>
+        )}
+        {left === 0 ? (
+          <RecapBody data={data}>
+            {round.status === "open" && (
+              <button className="btn-ink" onClick={onCloseRound}>
+                {L.t("closeRound")}
               </button>
-            </div>
-          </>
+            )}
+            <button className="btn-ghost" onClick={onExit}>
+              {L.t("seeRecap")}
+            </button>
+          </RecapBody>
         ) : (
           <>
             <h2 className="title">{L.t("almostDone")}</h2>
@@ -385,7 +383,7 @@ export function ServiceMode({
                 done={done}
                 tilt={k % 2 ? 2 : -2}
                 label={plural(i.count, i.container.name.toLowerCase())}
-                onTap={() => (buzz(), state.setChecks([i.key], !done))}
+                onTap={() => (buzz(), !done && play("pop"), state.setChecks([i.key], !done))}
               >
                 <IceCream kind={i.container.kind} colors={[]} size={46} />
                 <span className="tabular font-display text-[34px] font-bold leading-none">{i.count}</span>
@@ -423,6 +421,7 @@ export function ServiceMode({
       }
       const last = step.tiles.every((x) => x === t || state.checks.has(x.key));
       state.setChecks(last ? [t.key, step.key] : [t.key], true);
+      if (!last) play("pop");
       if (last) celebrate(tub.flavor, L.t("toFreezer"));
     };
     head = pop ? (
@@ -522,7 +521,10 @@ export function ServiceMode({
                               true,
                             );
                           state.setChecks([g.key, t.key], false);
-                        } else state.setChecks([t.key], true);
+                        } else {
+                          play("pop");
+                          state.setChecks([t.key], true);
+                        }
                       }}
                     >
                       <IceCream kind={l.container(t.order.containerId).kind} colors={plan.placed(t.order).map((f) => l.flavor(f))} size={40} />
@@ -569,7 +571,8 @@ export function ServiceMode({
                 tilt={k % 2 ? 2 : -2}
                 label={`${o.name}, ${describeOrder(menu, o)}`}
                 onTap={() => {
-                  buzz(served ? 12 : 25);
+                  buzz(served ? "tap" : "press");
+                  if (!served) play("pop");
                   state.serve(o.id, !served);
                 }}
               >

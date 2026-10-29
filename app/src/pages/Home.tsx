@@ -1,11 +1,14 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
-import { ChevronRight, Plus, QrCode } from "lucide-react";
+import { toast } from "sonner";
+import { ChevronRight, Crown, Plus, QrCode } from "lucide-react";
+import type { Flavor } from "@contracts/menu";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { Sheet } from "@/components/Sheet";
-import { IceCream } from "@/components/IceCream";
 import { PatternOverlay } from "@/components/FlavorPattern";
+import { EmptyArt } from "@/components/EmptyArt";
+import { buzz } from "@/lib/feel";
 import { ShareSheet } from "@/pages/round/ShareSheet";
 import { showError } from "@/lib/errors";
 import { initials, shortDate } from "@/lib/format";
@@ -61,6 +64,7 @@ function NewRoundSheet({ open, onClose }: { open: boolean; onClose: () => void }
   const utils = trpc.useUtils();
   const create = trpc.rounds.create.useMutation({
     onSuccess: ({ id }) => {
+      buzz("press");
       utils.rounds.list.invalidate();
       onClose();
       setTitle("");
@@ -103,6 +107,84 @@ function NewRoundSheet({ open, onClose }: { open: boolean; onClose: () => void }
   );
 }
 
+// Guests' orders show up on the home screen too while a round is open
+const LIVE = { refetchInterval: (q: { state: { data?: { status: string }[] } }) => (q.state.data?.some((r) => r.status === "open") ? 8000 : false) } as const;
+
+/** Its children jump when `value` changes (a counter going up) */
+function Bump({ value, children }: { value: number; children: ReactNode }) {
+  const prev = useRef(value);
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (prev.current === value) return;
+    prev.current = value;
+    setN((k) => k + 1);
+  }, [value]);
+  return (
+    <span key={n} className={n ? "count-pop" : undefined}>
+      {children}
+    </span>
+  );
+}
+
+/**
+ * One flavor of the display case. A long press marks it out of stock (or back):
+ * it vanishes from the order link. A short tap says so.
+ */
+function ShowcaseTile({ flavor, tilt, crowned, onToggle }: { flavor: Flavor; tilt: number; crowned: boolean; onToggle: () => void }) {
+  const { t } = useI18n();
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const long = useRef(false);
+  const [holding, setHolding] = useState(false);
+  const out = !flavor.available;
+  const stop = () => {
+    clearTimeout(timer.current);
+    setHolding(false);
+  };
+  return (
+    <button
+      type="button"
+      className="flex min-w-0 select-none flex-col items-center gap-1.5 [-webkit-touch-callout:none]"
+      aria-label={`${flavor.name}, ${out ? t("soldOut") : t("available")}`}
+      onPointerDown={() => {
+        long.current = false;
+        setHolding(true);
+        timer.current = setTimeout(() => {
+          long.current = true;
+          setHolding(false);
+          onToggle();
+        }, 480);
+      }}
+      onPointerUp={stop}
+      onPointerLeave={stop}
+      onPointerCancel={stop}
+      onContextMenu={(e) => e.preventDefault()}
+      onClick={() => {
+        if (!long.current) toast(t("showcaseHint"));
+      }}
+    >
+      <span className="relative w-full max-w-[66px]">
+        <span
+          className={`relative block aspect-square w-full overflow-hidden rounded-[20px] border-[3px] border-ink transition ${out ? "opacity-45 grayscale" : ""} ${holding ? "holding" : ""}`}
+          style={{ background: flavor.color, rotate: `${tilt}deg` }}
+        >
+          <PatternOverlay look={flavor} />
+        </span>
+        {out && (
+          <span className="pop-in absolute inset-x-0 top-1/2 -mt-3 flex justify-center">
+            <span className="-rotate-12 rounded-md border-2 border-ink bg-canvas px-1.5 py-0.5 text-[10px] font-extrabold uppercase">{t("soldOut")}</span>
+          </span>
+        )}
+        {crowned && !out && (
+          <span className="absolute -right-2 -top-3 flex h-7 w-7 rotate-12 items-center justify-center rounded-full border-[2.5px] border-ink bg-sun" title={t("favoriteFlavor")}>
+            <Crown size={14} strokeWidth={2.6} />
+          </span>
+        )}
+      </span>
+      <span className={`w-full truncate text-center text-[12px] font-extrabold ${out ? "text-muted line-through" : ""}`}>{flavor.name}</span>
+    </button>
+  );
+}
+
 export default function Home() {
   return usePop() ? <PopHome /> : <PlainHome />;
 }
@@ -116,12 +198,22 @@ function PopHome() {
   const { user } = useAuth();
   const [creating, setCreating] = useState(false);
   const [sharing, setSharing] = useState<RoundSummary | null>(null);
-  const { data: rounds, isLoading } = trpc.rounds.list.useQuery();
+  const { data: rounds, isLoading } = trpc.rounds.list.useQuery(undefined, LIVE);
   const { data: menu } = trpc.menu.get.useQuery();
+  const { data: favorite } = trpc.menu.favorite.useQuery();
+  const utils = trpc.useUtils();
+  const setAvailable = trpc.menu.setAvailable.useMutation({
+    onMutate: ({ id, available }) => {
+      // Shown at once; the server catches up
+      utils.menu.get.setData(undefined, (m) => m && { ...m, flavors: m.flavors.map((f) => (f.id === id ? { ...f, available } : f)) });
+    },
+    onSettled: () => utils.menu.get.invalidate(),
+    onError: showError,
+  });
   const open = rounds?.filter((r) => r.status === "open") ?? [];
   const closed = rounds?.filter((r) => r.status === "closed") ?? [];
   const firstName = user?.name && user.name !== "Glacier" ? user.name.split(" ")[0] : null;
-  const flavors = menu?.flavors.filter((f) => f.available) ?? [];
+  const flavors = menu?.flavors.filter((f) => !f.archived) ?? [];
 
   return (
     <div className="page-in space-y-5">
@@ -163,11 +255,8 @@ function PopHome() {
 
       {!isLoading && rounds?.length === 0 && (
         <div className="card flex flex-col items-center px-6 py-8 text-center">
-          <div className="flex items-end gap-1">
-            <IceCream kind="cone" colors={["#F2E3B3", "#F29BB0"]} size={52} />
-            <IceCream kind="cup" colors={["#A9CF8A", "#6B3F2A", "#F5E06A"]} size={60} />
-          </div>
-          <h2 className="mt-5 font-display text-xl font-bold">{t("readyTitle")}</h2>
+          <EmptyArt kind="rounds" size={140} />
+          <h2 className="mt-4 font-display text-xl font-bold">{t("readyTitle")}</h2>
           <p className="mt-1.5 max-w-xs text-[15px] text-muted">{t("readyText")}</p>
         </div>
       )}
@@ -185,9 +274,14 @@ function PopHome() {
                   <span className="flex-none rounded-full bg-canvas px-2.5 py-0.5 text-[11px] font-extrabold uppercase">{t("inProgress")}</span>
                 </div>
                 <p className="text-[13px] font-bold">
-                  {r.orders === 0
-                    ? t("noOrdersYet")
-                    : `${tn("ices", r.orders)} · ${r.served === r.orders ? t("roundAllServed") : tn("servedCount", r.served)}`}
+                  {r.orders === 0 ? (
+                    t("noOrdersYet")
+                  ) : (
+                    <>
+                      <Bump value={r.orders}>{tn("ices", r.orders)}</Bump> ·{" "}
+                      {r.served === r.orders ? t("roundAllServed") : tn("servedCount", r.served)}
+                    </>
+                  )}
                 </p>
                 <div className="h-2.5 rounded-full bg-ink/15" aria-hidden="true">
                   <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${r.orders ? (r.served / r.orders) * 100 : 0}%` }} />
@@ -217,19 +311,23 @@ function PopHome() {
           {flavors.length === 0 ? (
             <p className="text-[15px] text-muted">{t("showcaseEmpty")}</p>
           ) : (
-            <div className="grid grid-cols-4 gap-x-2.5 gap-y-3.5">
-              {flavors.map((f, i) => (
-                <div key={f.id} className="flex min-w-0 flex-col items-center gap-1.5">
-                  <span
-                    className="relative aspect-square w-full max-w-[66px] overflow-hidden rounded-[20px] border-[3px] border-ink"
-                    style={{ background: f.color, rotate: `${TILTS[i % TILTS.length]}deg` }}
-                  >
-                    <PatternOverlay look={f} />
-                  </span>
-                  <span className="w-full truncate text-center text-[12px] font-extrabold">{f.name}</span>
-                </div>
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-4 gap-x-2.5 gap-y-3.5">
+                {flavors.map((f, i) => (
+                  <ShowcaseTile
+                    key={f.id}
+                    flavor={f}
+                    tilt={TILTS[i % TILTS.length]!}
+                    crowned={favorite?.flavorId === f.id}
+                    onToggle={() => {
+                      buzz("press");
+                      setAvailable.mutate({ kind: "flavors", id: f.id, available: !f.available });
+                    }}
+                  />
+                ))}
+              </div>
+              <p className="mt-3 text-center text-[13px] font-semibold text-muted">{t("showcaseHint")}</p>
+            </>
           )}
         </section>
       )}
@@ -261,10 +359,9 @@ function PopHome() {
 
 function PlainHome() {
   const { t, tn } = useI18n();
-
   const { user } = useAuth();
   const [creating, setCreating] = useState(false);
-  const { data: rounds, isLoading } = trpc.rounds.list.useQuery();
+  const { data: rounds, isLoading } = trpc.rounds.list.useQuery(undefined, LIVE);
   const open = rounds?.filter((r) => r.status === "open") ?? [];
   const closed = rounds?.filter((r) => r.status === "closed") ?? [];
   const firstName = user?.name && user.name !== "Glacier" ? user.name.split(" ")[0] : null;
@@ -291,11 +388,8 @@ function PlainHome() {
 
       {isLoading ? null : rounds?.length === 0 ? (
         <div className="card flex flex-col items-center px-6 py-10 text-center">
-          <div className="flex items-end gap-1">
-            <IceCream kind="cone" colors={["#F2E3B3", "#F29BB0"]} size={52} />
-            <IceCream kind="cup" colors={["#A9CF8A", "#6B3F2A", "#F5E06A"]} size={60} />
-          </div>
-          <h2 className="mt-5 font-display text-xl font-bold">{t("readyTitle")}</h2>
+          <EmptyArt kind="rounds" size={140} />
+          <h2 className="mt-4 font-display text-xl font-bold">{t("readyTitle")}</h2>
           <p className="mt-1.5 max-w-xs text-[15px] text-muted">
             {t("readyText")}
           </p>

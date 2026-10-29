@@ -6,6 +6,8 @@ import { PatternOverlay } from "./FlavorPattern";
 import { Segmented } from "./Segmented";
 import { lookup } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { buzz } from "@/lib/feel";
+import { play } from "@/lib/sound";
 
 export type Draft = { name: string; containerId: number; scoops: number[]; toppings: number[]; note: string };
 
@@ -147,7 +149,7 @@ export function OrderForm({
                 key={f.id}
                 type="button"
                 disabled={full || out}
-                onClick={() => set({ scoops: [...draft.scoops, f.id] })}
+                onClick={() => (buzz(), play("pop"), set({ scoops: [...draft.scoops, f.id] }))}
                 className={clsx(
                   "relative flex min-h-[76px] flex-col items-start justify-end overflow-hidden rounded-2xl p-2.5 text-left text-[13px] font-semibold leading-tight transition active:scale-95 pop:rounded-[20px] pop:border-[3px] pop:border-ink pop:font-display pop:text-[14px]",
                   full && !n && "opacity-40",

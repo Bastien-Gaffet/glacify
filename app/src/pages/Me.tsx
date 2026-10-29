@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Check, KeyRound, Languages, LogOut, MonitorSmartphone, Paintbrush, PencilLine, Sparkles, UserPlus } from "lucide-react";
+import { Check, KeyRound, Languages, LogOut, MonitorSmartphone, Paintbrush, PencilLine, Volume2, Sparkles, UserPlus } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/PageHeader";
@@ -12,12 +12,15 @@ import { initials } from "@/lib/format";
 import { showError } from "@/lib/errors";
 import { LANGS, useI18n } from "@/lib/i18n";
 import { STYLES, useStyle } from "@/lib/style";
+import { setSoundsOn, soundsOn } from "@/lib/sound";
+import { Switch } from "@/components/Switch";
 
 type Open = null | "name" | "account" | "password" | "lang" | "style";
 
 export default function Me() {
   const { t, lang, setLang } = useI18n();
   const { style, setStyle } = useStyle();
+  const [sounds, setSounds] = useState(soundsOn);
   const { user, logout } = useAuth();
   const [open, setOpen] = useState<Open>(null);
   const [name, setName] = useState("");
@@ -85,6 +88,23 @@ export default function Me() {
 
       <MenuGroup title={t("preferences")}>
         <MenuRow icon={Languages} label={t("language")} value={LANGS.find((l) => l.code === lang)!.name} onClick={() => setOpen("lang")} />
+        <div className="flex min-h-[64px] w-full items-center gap-3.5 px-4 py-2">
+          <span className="flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-canvas text-ink">
+            <Volume2 size={19} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-medium">{t("sounds")}</span>
+            <span className="block text-sm leading-snug text-muted">{t("soundsSub")}</span>
+          </span>
+          <Switch
+            checked={sounds}
+            label={t("sounds")}
+            onChange={(on) => {
+              setSoundsOn(on);
+              setSounds(on);
+            }}
+          />
+        </div>
         <MenuRow icon={Paintbrush} label={t("style")} value={t(STYLES.find((s) => s.code === style)!.name)} onClick={() => setOpen("style")} />
       </MenuGroup>
 

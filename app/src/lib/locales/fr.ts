@@ -333,4 +333,29 @@ export const fr = {
   "err.menu.keepOneContainer": "Gardez au moins un contenant",
   "err.plan.openRounds": "Une seule tournée ouverte à la fois en version gratuite.",
   "err.plan.ordersPerRound": "{n} glaces par tournée en version gratuite.",
+
+  // Round summary
+  recapTitle: "Bilan de la tournée",
+  openRecap: "Voir le bilan",
+  openRecapSub: "Le podium des parfums et la tournée en chiffres",
+  lessThanMinute: "< 1 min",
+  durationMin: "{n} min",
+  durationHours: "{h} h {m}",
+  ofService: "de service",
+  iceWord_one: "glace",
+  iceWord_other: "glaces",
+  shareRecap: "Partager le bilan",
+  shareFailed: "Le partage n'a pas fonctionné.",
+  recapImageFoot: "Servi avec Glacify",
+
+  // Live
+  newChip: "Nouveau",
+  beingPrepared: "{name} prépare votre glace",
+  iceReadyTitle: "{name}, votre glace est prête !",
+  iceReadyText: "Allez la chercher auprès de {name}.",
+  thanks: "Merci !",
+  showcaseHint: "Appui long sur un parfum : épuisé ou de retour.",
+  favoriteFlavor: "Le parfum le plus commandé",
+  sounds: "Sons",
+  soundsSub: "Un petit bruit à chaque boule et à chaque commande",
 };

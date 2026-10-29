@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 import { Check, Pencil, Plus, X } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { IceCream } from "@/components/IceCream";
+import { Confetti } from "@/components/Confetti";
+import { EmptyArt } from "@/components/EmptyArt";
 import { confirmDialog } from "@/components/Confirm";
 import { OrderForm, draftToInput, emptyDraft, toDraft, type Draft } from "@/components/OrderForm";
 import { describeOrder, lookup } from "@/lib/format";
 import { showError } from "@/lib/errors";
 import { LANGS, useI18n } from "@/lib/i18n";
+import { buzz } from "@/lib/feel";
 
 /** The guest's secret for this round (lets them change their own orders), kept by the browser. */
 const tokenKey = (code: string) => `glacify.guest.${code.toUpperCase()}`;
@@ -73,8 +76,11 @@ export default function GuestOrder() {
   );
   const utils = trpc.useUtils();
   const refresh = () => utils.guest.round.invalidate();
+  const [justPlaced, setJustPlaced] = useState<number | null>(null);
   const place = trpc.guest.placeOrder.useMutation({
     onSuccess: (res) => {
+      buzz("success");
+      setJustPlaced(res.id);
       write(tokenKey(code), res.token);
       setToken(res.token);
       setComposing(null);
@@ -89,11 +95,26 @@ export default function GuestOrder() {
   });
   const cancel = trpc.guest.cancelOrder.useMutation({ onSuccess: refresh, onError: showError });
 
+  // The host hands an ice cream over: its owner's phone celebrates
+  type Mine = NonNullable<typeof data>["mine"][number];
+  const [ready, setReady] = useState<Mine | null>(null);
+  const servedSeen = useRef<Set<number> | null>(null);
+  useEffect(() => {
+    if (!data) return;
+    const served = data.mine.filter((o) => o.servedAt);
+    const fresh = servedSeen.current && served.find((o) => !servedSeen.current!.has(o.id));
+    if (fresh) {
+      setReady(fresh);
+      buzz("success");
+    }
+    servedSeen.current = new Set(served.map((o) => o.id));
+  }, [data]);
+
   if (isLoading) return null;
   if (error || !data) {
     return (
       <div className="mx-auto flex min-h-[100svh] max-w-md flex-col items-center justify-center px-6 text-center">
-        <IceCream kind="cup" colors={[]} size={64} />
+        <EmptyArt kind="lost" />
         <h1 className="mt-6 font-display text-2xl font-bold">{t("linkNotFoundTitle")}</h1>
         <p className="mt-2 text-muted">{t("linkNotFoundText")}</p>
       </div>
@@ -124,8 +145,9 @@ export default function GuestOrder() {
       </div>
 
       {!data.open && (
-        <div className="card mt-6 p-5">
-          <p className="font-semibold">{t("ordersClosed")}</p>
+        <div className="card mt-6 flex flex-col items-center p-6 text-center">
+          <EmptyArt kind="closed" size={120} />
+          <p className="mt-3 font-display text-lg font-bold">{t("ordersClosed")}</p>
           <p className="mt-1 text-sm text-muted">{t("ordersClosedText", { name: data.hostName })}</p>
         </div>
       )}
@@ -136,8 +158,11 @@ export default function GuestOrder() {
           {mine.map((o) => {
             const served = !!o.servedAt;
             return (
-              <div key={o.id} className={`page-in flex items-center gap-4 rounded-3xl p-4 ${served ? "bg-pistache/10" : "bg-surface"}`}>
-                <div className="flex w-14 flex-none justify-center">
+              <div
+                key={o.id}
+                className={`flex items-center gap-4 rounded-3xl p-4 pop:border-[3px] pop:border-ink ${o.id === justPlaced ? "pop-in" : "page-in"} ${served ? "bg-pistache/10 pop:bg-mint" : "bg-surface pop:bg-canvas"}`}
+              >
+                <div className={`flex w-14 flex-none justify-center ${served ? "" : "wobble"}`}>
                   <IceCream kind={l.container(o.containerId).kind} colors={o.scoops.map((id) => l.flavor(id))} size={50} />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -149,7 +174,13 @@ export default function GuestOrder() {
                         <Check size={16} strokeWidth={3} /> {t("servedEnjoy")}
                       </>
                     ) : (
-                      t("orderReceived")
+                      <>
+                        <span className="relative mr-1 flex h-2.5 w-2.5" aria-hidden="true">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
+                          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-accent" />
+                        </span>
+                        {t("beingPrepared", { name: data.hostName })}
+                      </>
                     )}
                   </p>
                 </div>
@@ -214,6 +245,25 @@ export default function GuestOrder() {
             ))}
           </div>
         </section>
+      )}
+
+      {ready && (
+        <div
+          className="fade-in fixed inset-0 z-50 flex flex-col items-center justify-center bg-canvas px-8 text-center pop:bg-mint"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("iceReadyTitle", { name: ready.name })}
+        >
+          <div className="pop-in relative">
+            <Confetti colors={[...ready.scoops.map((id) => l.flavor(id).color), "rgb(var(--accent))", "rgb(var(--sun))", "rgb(var(--lilac))"]} />
+            <IceCream kind={l.container(ready.containerId).kind} colors={ready.scoops.map((id) => l.flavor(id))} size={120} />
+          </div>
+          <h2 className="title mt-8">{t("iceReadyTitle", { name: ready.name })}</h2>
+          <p className="mt-2 text-[16px] text-muted pop:font-bold pop:text-ink/75">{t("iceReadyText", { name: data.hostName })}</p>
+          <button className="btn-ink mt-8 w-full max-w-xs py-4 text-base" onClick={() => setReady(null)}>
+            {t("thanks")}
+          </button>
+        </div>
       )}
 
       {showForm && (

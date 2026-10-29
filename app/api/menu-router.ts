@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { and, count, eq, max } from "drizzle-orm";
+import { and, count, desc, eq, max } from "drizzle-orm";
 import { HARD_LIMITS } from "@contracts/plans";
 import { DEFAULT_ACCENT, FLAVOR_PATTERNS, MAX_SCOOPS } from "@contracts/menu";
 
 const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
-import { CONTAINER_KINDS, containers, flavors, toppings } from "@db/schema";
+import { CONTAINER_KINDS, containers, flavors, orders, rounds, toppings } from "@db/schema";
 import { authedQuery, createRouter } from "./middleware";
 import { getDb } from "./queries/connection";
 import { fail } from "./lib/fail";
@@ -28,6 +28,22 @@ function notFound(): never {
 
 export const menuRouter = createRouter({
   get: authedQuery.query(({ ctx }) => loadMenu(ctx.user.id)),
+
+  /** The flavor most ordered over the host's recent rounds (the display case crowns it) */
+  favorite: authedQuery.query(async ({ ctx }) => {
+    const rows = await getDb()
+      .select({ scoops: orders.scoops })
+      .from(orders)
+      .innerJoin(rounds, eq(rounds.id, orders.roundId))
+      .where(eq(rounds.userId, ctx.user.id))
+      .orderBy(desc(orders.id))
+      .limit(3000);
+    const counts = new Map<number, number>();
+    for (const { scoops } of rows) for (const id of scoops) counts.set(id, (counts.get(id) ?? 0) + 1);
+    let best: { flavorId: number; count: number } | null = null;
+    for (const [flavorId, n] of counts) if (!best || n > best.count) best = { flavorId, count: n };
+    return best;
+  }),
 
   saveFlavor: authedQuery
     .input(

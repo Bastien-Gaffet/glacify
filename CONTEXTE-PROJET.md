@@ -135,6 +135,30 @@ Choisie par Bastien le 25 octobre 2026. Un comptoir clair et lumineux, une typog
 Logo : un cornet à une boule blanche ourlée de rose, sur fond framboise (`marketing/logo/`,
 icônes rendues par `node marketing/logo/render.cjs`).
 
+## Côté ludique (29 oct. 2026, tout validé par Bastien)
+
+- **Bilan de tournée** (`src/pages/round/Recap.tsx`) : podium des 3 parfums les plus commandés,
+  glaces, boules, temps de service (du premier au dernier « servi »). Écran de fin du service
+  plein écran, et carte « Voir le bilan » sur la page d'une tournée finie ou fermée
+  (`?bilan=1`). « Partager le bilan » dessine une image 1080×1350 (canvas) : partage natif dans
+  l'APK (`@capacitor/filesystem` + `@capacitor/share`), feuille de partage ou téléchargement
+  dans un navigateur.
+- **Invité en direct** (`GuestOrder.tsx`, la page se rafraîchit toutes les 5 s) : sa glace se
+  dandine avec « Bastien prépare votre glace » ; quand l'hôte la marque servie, plein écran
+  « Léa, votre glace est prête ! » avec confettis CSS et vibration.
+- **Arrivées en direct** : une commande d'invité tombe dans la liste avec un rebond et un badge
+  « Nouveau » ; l'accueil se rafraîchit toutes les 8 s tant qu'une tournée est ouverte, le
+  compteur saute.
+- **Vitrine vivante** (accueil Pop) : appui long sur un parfum = épuisé / de retour (autocollant
+  « Épuisé »), couronne sur le parfum le plus commandé (`menu.favorite`, 3000 dernières
+  commandes).
+- **États vides illustrés** : `src/components/EmptyArt.tsx` (rounds, orders, closed, lost).
+- **Retours physiques** : `src/lib/feel.ts` (`buzz("tap" | "press" | "success")`), haptique
+  native dans l'APK (`@capacitor/haptics`), `navigator.vibrate` ailleurs.
+- **Sons** (`src/lib/sound.ts`, synthétisés, aucun fichier) : « pop » par boule, « ding » à
+  l'arrivée d'une commande, « tada » au congélateur et au bilan. **Désactivés par défaut**,
+  Moi > Préférences > Sons.
+
 ## Mise en ligne (faite le 26 octobre 2026)
 
 En ligne sur https://glacify.bastiengaffet.fr : enregistrement A `glacify` → `72.62.190.7` (API
@@ -150,9 +174,7 @@ Les scripts de `deploy/` doivent rester en LF (`.gitattributes`) : extraits en C
    service plein écran.
 2. ~~Nouvelle direction artistique~~ : faite le 29 oct. 2026 (style Pop, voir plus haut).
    Retours de Bastien sur téléphone à recueillir.
-3. **D'autres façons de rendre l'app ludique** (souhait de Bastien) : retours physiques
-   (vibrations, ressorts), états vides illustrés, animation à l'arrivée d'une commande, bilan de
-   fin de tournée.
+3. ~~D'autres façons de rendre l'app ludique~~ : faites le 29 oct. 2026 (voir « Côté ludique »).
 4. Prix (par contenant, par boule, par supplément) et total par tournée, pour l'usage commerce.
 5. (Seulement si Bastien le décide un jour) une version payante : le mécanisme est déjà là.
 6. Tutoriel interactif (visite guidée, comme Equiliz) joué sur une tournée de démonstration.

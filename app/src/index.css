@@ -186,12 +186,83 @@ body {
   transform-origin: center;
 }
 
+/* A new order lands in the list */
+@keyframes drop-in {
+  0% { transform: translateY(-28px) scale(0.92); opacity: 0; }
+  60% { transform: translateY(4px) scale(1.02); opacity: 1; }
+  80% { transform: translateY(-2px); }
+  100% { transform: none; }
+}
+.drop-in {
+  animation: drop-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* A number that just changed */
+@keyframes count-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.count-pop {
+  display: inline-block;
+  animation: count-pop 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* An ice cream being made: it sways a little */
+@keyframes wobble {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+.wobble {
+  animation: wobble 1.6s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+
+/* Something arriving with a spring */
+@keyframes pop-in {
+  0% { transform: scale(0.4) rotate(-12deg); opacity: 0; }
+  60% { transform: scale(1.08) rotate(3deg); opacity: 1; }
+  100% { transform: none; }
+}
+.pop-in {
+  animation: pop-in 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Confetti without the animation library (guests' page): each bit flies to
+   its own --dx/--dy */
+@keyframes confetti-fly {
+  0% { transform: translate(0, 0) scale(0.4) rotate(0); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1) rotate(200deg); opacity: 0; }
+}
+.confetti-bit {
+  position: absolute;
+  animation: confetti-fly 1100ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+/* Long press on a display case tile */
+@keyframes hold {
+  from { transform: scale(1); }
+  to { transform: scale(0.9); }
+}
+.holding {
+  animation: hold 450ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .page-in,
   .stagger > *,
   .sheet-up,
   .fade-in,
-  .scoop-drop {
+  .scoop-drop,
+  .drop-in,
+  .count-pop,
+  .wobble,
+  .pop-in,
+  .confetti-bit,
+  .holding {
     animation: none;
+  }
+  .confetti-bit {
+    display: none;
   }
 }

@@ -335,4 +335,29 @@ export const en: Dict = {
   "err.menu.keepOneContainer": "Keep at least one container",
   "err.plan.openRounds": "Only one open round at a time in the free version.",
   "err.plan.ordersPerRound": "{n} ice creams per round in the free version.",
+
+  // Round summary
+  recapTitle: "Round summary",
+  openRecap: "See the summary",
+  openRecapSub: "The flavour podium and the round in numbers",
+  lessThanMinute: "< 1 min",
+  durationMin: "{n} min",
+  durationHours: "{h} h {m}",
+  ofService: "of service",
+  iceWord_one: "ice cream",
+  iceWord_other: "ice creams",
+  shareRecap: "Share the summary",
+  shareFailed: "Sharing didn't work.",
+  recapImageFoot: "Served with Glacify",
+
+  // Live
+  newChip: "New",
+  beingPrepared: "{name} is making your ice cream",
+  iceReadyTitle: "{name}, your ice cream is ready!",
+  iceReadyText: "Go and get it from {name}.",
+  thanks: "Thanks!",
+  showcaseHint: "Long press a flavour: sold out, or back.",
+  favoriteFlavor: "The most ordered flavour",
+  sounds: "Sounds",
+  soundsSub: "A little noise for each scoop and each order",
 };

@@ -3,6 +3,8 @@ import { Check, ChevronRight, IceCreamBowl, IceCreamCone, Play, RotateCcw } from
 import { clsx } from "clsx";
 import { buildPlan } from "@contracts/plan";
 import { IceCream } from "@/components/IceCream";
+import { EmptyArt } from "@/components/EmptyArt";
+import { buzz } from "@/lib/feel";
 import { FlavorDot } from "@/components/FlavorPattern";
 import { confirmDialog } from "@/components/Confirm";
 import { describeOrder, lookup, plural } from "@/lib/format";
@@ -46,7 +48,7 @@ function Task({
 }) {
   return (
     <button
-      onClick={onToggle}
+      onClick={() => (buzz(), onToggle())}
       aria-pressed={done}
       className={clsx(
         "flex min-h-[64px] w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left transition active:scale-[0.99]",
@@ -104,8 +106,9 @@ export function Service({
 
   if (plan.orders.length === 0) {
     return (
-      <div className="rounded-3xl border-2 border-dashed border-line px-6 py-10 text-center">
-        <p className="font-display text-lg font-bold">{t("nothingToServe")}</p>
+      <div className="flex flex-col items-center rounded-3xl border-2 border-dashed border-line px-6 py-8 text-center pop:border-[3px] pop:border-ink/25">
+        <EmptyArt kind="orders" size={130} />
+        <p className="mt-3 font-display text-lg font-bold">{t("nothingToServe")}</p>
         <p className="mt-1 text-[15px] text-muted">{t("planAppears")}</p>
       </div>
     );

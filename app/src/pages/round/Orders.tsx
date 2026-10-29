@@ -1,10 +1,15 @@
+import { useEffect, useRef, useState } from "react";
 import { Copy, Plus, QrCode, Smartphone, Trash2 } from "lucide-react";
+import { clsx } from "clsx";
 import { inkOn } from "@contracts/menu";
 import { countFlavors } from "@contracts/plan";
 import { IceCream } from "@/components/IceCream";
+import { EmptyArt } from "@/components/EmptyArt";
 import { confirmDialog } from "@/components/Confirm";
 import { describeOrder, lookup } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { buzz } from "@/lib/feel";
+import { play } from "@/lib/sound";
 import { trpc } from "@/providers/trpc";
 import { showError } from "@/lib/errors";
 import type { EditTarget } from "./OrderSheet";
@@ -31,6 +36,24 @@ export function Orders({
     onError: showError,
   });
 
+  // Orders sent from the link while the list is open: they drop in, the phone rings
+  const seen = useRef<Set<number> | null>(null);
+  const [fresh, setFresh] = useState<Set<number>>(() => new Set());
+  const freshTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => {
+    const before = seen.current;
+    seen.current = new Set(orders.map((o) => o.id));
+    if (!before) return;
+    const arrived = orders.filter((o) => !before.has(o.id) && o.source === "guest").map((o) => o.id);
+    if (!arrived.length) return;
+    buzz("success");
+    play("ding");
+    setFresh(new Set(arrived));
+    clearTimeout(freshTimer.current);
+    freshTimer.current = setTimeout(() => setFresh(new Set()), 2600);
+  }, [orders]);
+  useEffect(() => () => clearTimeout(freshTimer.current), []);
+
   const counts = [...countFlavors(orders)].sort((a, b) => b[1] - a[1]);
   const limit = data.limits.ordersPerRound;
 
@@ -49,8 +72,9 @@ export function Orders({
       )}
 
       {orders.length === 0 ? (
-        <div className="rounded-3xl border-2 border-dashed border-line px-6 py-10 text-center">
-          <p className="font-display text-lg font-bold">{t("noOrdersYet")}</p>
+        <div className="flex flex-col items-center rounded-3xl border-2 border-dashed border-line px-6 py-8 text-center pop:border-[3px] pop:border-ink/25">
+          <EmptyArt kind="orders" size={130} />
+          <p className="mt-3 font-display text-lg font-bold">{t("noOrdersYet")}</p>
           <p className="mt-1 text-[15px] text-muted">{open ? t("shareOrAdd") : t("reopenToTake")}</p>
         </div>
       ) : (
@@ -58,7 +82,10 @@ export function Orders({
           {orders.map((o) => {
             const c = l.container(o.containerId);
             return (
-              <li key={o.id} className="card flex items-center gap-3 p-3 pr-2">
+              <li
+                key={o.id}
+                className={clsx("card flex items-center gap-3 p-3 pr-2 transition-shadow duration-700", fresh.has(o.id) && "drop-in ring-4 ring-accent/30")}
+              >
                 <button className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => onEdit({ mode: "edit", order: o })}>
                   <div className="flex w-12 flex-none justify-center">
                     <IceCream kind={c.kind} colors={o.scoops.map((id) => l.flavor(id))} size={40} />
@@ -67,6 +94,7 @@ export function Orders({
                     <p className="flex items-center gap-1.5 font-semibold">
                       <span className="truncate">{o.name}</span>
                       {o.source === "guest" && <Smartphone size={14} className="flex-none text-muted" aria-label={t("orderedFromLink")} />}
+                      {fresh.has(o.id) && <span className="chip pop-in flex-none bg-accent px-2 py-0.5 text-[11px] text-onaccent">{t("newChip")}</span>}
                       {o.servedAt && <span className="chip flex-none bg-pistache/15 px-2 py-0.5 text-[11px] text-pistache">{t("servedChip")}</span>}
                     </p>
                     <p className="text-sm leading-snug text-muted">{describeOrder(menu, o)}</p>

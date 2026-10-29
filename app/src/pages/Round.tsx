@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
-import { Lock, LockOpen, MoreHorizontal, Pencil, QrCode, Trash2 } from "lucide-react";
+import { ChevronRight, Lock, LockOpen, MoreHorizontal, Pencil, QrCode, Trash2, Trophy } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { PageHeader } from "@/components/PageHeader";
 import { Segmented } from "@/components/Segmented";
@@ -9,6 +9,7 @@ import { Sheet } from "@/components/Sheet";
 import { confirmDialog } from "@/components/Confirm";
 import { MenuGroup, MenuRow } from "@/components/menu";
 import { showError } from "@/lib/errors";
+import { buzz } from "@/lib/feel";
 import { useI18n } from "@/lib/i18n";
 import { Orders } from "./round/Orders";
 import { Service } from "./round/Service";
@@ -16,6 +17,9 @@ import { ShareSheet } from "./round/ShareSheet";
 import { OrderSheet, type EditTarget } from "./round/OrderSheet";
 
 type View = "orders" | "service";
+
+// With its animations, loaded only when opened
+const RecapScreen = lazy(() => import("./round/Recap").then((m) => ({ default: m.RecapScreen })));
 
 export default function Round() {
   const { t, tn } = useI18n();
@@ -32,6 +36,14 @@ export default function Round() {
   const mode = view === "service" && params.get("etapes") === "1";
   const setMode = (open: boolean) =>
     open ? setParams({ vue: "service", etapes: "1" }) : setParams({ vue: "service" }, { replace: true });
+  // The summary also has its own history entry
+  const recap = params.get("bilan") === "1";
+  const setRecap = (open: boolean) => {
+    const next = new URLSearchParams(params);
+    if (open) next.set("bilan", "1");
+    else next.delete("bilan");
+    setParams(next, { replace: !open });
+  };
 
   const [editing, setEditing] = useState<EditTarget | null>(null);
   const [sharing, setSharing] = useState(false);
@@ -70,7 +82,8 @@ export default function Round() {
 
   const { round, orders } = data;
   const open = round.status === "open";
-  const close = () => setStatus.mutate({ id, status: "closed" }, { onSuccess: () => toast.success(t("roundClosed")) });
+  const close = () => setStatus.mutate({ id, status: "closed" }, { onSuccess: () => (buzz("success"), toast.success(t("roundClosed"))) });
+  const finished = orders.length > 0 && (!open || orders.every((o) => o.servedAt));
 
   return (
     <div className="page-in">
@@ -98,6 +111,22 @@ export default function Round() {
         </p>
       </PageHeader>
 
+      {finished && (
+        <button
+          onClick={() => setRecap(true)}
+          className="card mb-5 flex w-full items-center gap-4 p-4 text-left transition hover:bg-sunken/70 active:scale-[0.99]"
+        >
+          <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-ink text-onink pop:-rotate-6 pop:border-[2.5px] pop:border-ink pop:bg-sun pop:text-ink">
+            <Trophy size={22} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{t("openRecap")}</span>
+            <span className="block text-sm text-muted">{t("openRecapSub")}</span>
+          </span>
+          <ChevronRight size={20} className="flex-none text-muted" />
+        </button>
+      )}
+
       <div className="mb-6">
         <Segmented
           label={t("view")}
@@ -117,6 +146,11 @@ export default function Round() {
       )}
 
       <OrderSheet roundId={id} menu={data.menu} target={editing} count={orders.length} onClose={() => setEditing(null)} />
+      {recap && finished && (
+        <Suspense fallback={null}>
+          <RecapScreen data={data} onClose={() => setRecap(false)} />
+        </Suspense>
+      )}
       <ShareSheet open={sharing} onClose={() => setSharing(false)} code={round.code} title={round.title} />
 
       <Sheet open={actions} onClose={() => setActions(false)} title={round.title}>
