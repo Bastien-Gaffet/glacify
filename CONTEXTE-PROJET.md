@@ -74,6 +74,15 @@ sur le modèle d'Equiliz et Babelibris (l'ancien code n'existait plus que sous f
   serveur tourne avec `BETA_PREMIUM=false` (sans la variable, tout reste gratuit). À ne
   rallumer que sur décision de Bastien.
 
+## Motifs des parfums (29 oct. 2026)
+
+Un parfum a une couleur et, au choix, un **motif** dessiné dans la seconde couleur (`accent`) :
+uni, éclats (stracciatella, menthe chocolat), marbré (caramel), morceaux (fraise, pistache),
+grains (vanille, framboise). Choix de Bastien : des motifs dessinés plutôt que des photos.
+Dessin unique dans `src/components/FlavorPattern.tsx`, utilisé par les boules (`IceCream`), les
+tuiles de commande, la carte et le service. La carte classique en est équipée, et la migration
+`0001_flavor_patterns` a équipé les parfums classiques des cartes existantes.
+
 ## Langues (29 oct. 2026)
 
 Français et anglais, sur le modèle d'Equiliz : `src/lib/i18n.tsx`, dictionnaires

@@ -61,7 +61,7 @@ export function Orders({
               <li key={o.id} className="card flex items-center gap-3 p-3 pr-2">
                 <button className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => onEdit({ mode: "edit", order: o })}>
                   <div className="flex w-12 flex-none justify-center">
-                    <IceCream kind={c.kind} colors={o.scoops.map((id) => l.flavor(id).color)} size={40} />
+                    <IceCream kind={c.kind} colors={o.scoops.map((id) => l.flavor(id))} size={40} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="flex items-center gap-1.5 font-semibold">

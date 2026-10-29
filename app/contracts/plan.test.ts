@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildPlan, type PlanOrder, type Tub } from "./plan";
 import type { Menu } from "./menu";
 
-const f = (id: number, name: string) => ({ id, name, color: "#ffffff", available: true, archived: false });
+const f = (id: number, name: string) => ({ id, name, color: "#ffffff", pattern: "none" as const, accent: "#000000", available: true, archived: false });
 const menu: Menu = {
   flavors: [f(1, "Vanille"), f(2, "Chocolat"), f(3, "Fraise"), f(4, "Mangue")],
   toppings: [{ id: 10, name: "Chantilly", available: true, archived: false }],

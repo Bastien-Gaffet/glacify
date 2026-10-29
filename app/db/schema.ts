@@ -51,6 +51,9 @@ export const flavors = mysqlTable(
     userId: int("user_id").notNull(),
     name: varchar("name", { length: 60 }).notNull(),
     color: varchar("color", { length: 7 }).notNull(),
+    /** FLAVOR_PATTERNS: drawn over the colour, in `accent` */
+    pattern: varchar("pattern", { length: 12 }).notNull().default("none"),
+    accent: varchar("accent", { length: 7 }).notNull().default("#3E2A22"),
     available: tinyint("available").notNull().default(1),
     /** Removed from the carte, kept so past orders still name it */
     archived: tinyint("archived").notNull().default(0),

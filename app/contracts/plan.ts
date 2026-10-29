@@ -29,6 +29,8 @@ const missingFlavor = (id: number, name: string): Flavor => ({
   id,
   name,
   color: "#D6D3D1",
+  pattern: "none",
+  accent: "#3E2A22",
   available: false,
   archived: true,
 });

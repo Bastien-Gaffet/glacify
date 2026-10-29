@@ -16,7 +16,8 @@ export function lookup(menu: Menu) {
   const tp = new Map(menu.toppings.map((x) => [x.id, x]));
   const c = new Map(menu.containers.map((x) => [x.id, x]));
   return {
-    flavor: (id: number) => f.get(id) ?? { id, name: t("removedFlavor"), color: "#D6D3D1", available: false, archived: true },
+    flavor: (id: number) =>
+      f.get(id) ?? { id, name: t("removedFlavor"), color: "#D6D3D1", pattern: "none" as const, accent: "#3E2A22", available: false, archived: true },
     topping: (id: number) => tp.get(id) ?? { id, name: t("removedTopping"), available: false, archived: true },
     container: (id: number) =>
       c.get(id) ?? { id, name: t("containerFallback"), kind: "cup" as const, maxScoops: 4, available: false, archived: true },

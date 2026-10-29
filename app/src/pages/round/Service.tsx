@@ -3,6 +3,7 @@ import { Check, ChevronRight, IceCreamBowl, IceCreamCone, Play, RotateCcw } from
 import { clsx } from "clsx";
 import { buildPlan } from "@contracts/plan";
 import { IceCream } from "@/components/IceCream";
+import { FlavorDot } from "@/components/FlavorPattern";
 import { confirmDialog } from "@/components/Confirm";
 import { describeOrder, lookup, plural } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
@@ -195,7 +196,7 @@ export function Service({
                   done,
                 )
               }
-              lead={<span className="h-10 w-10 flex-none rounded-full shadow-[inset_0_0_0_1px_rgb(0_0_0/0.08)]" style={{ background: s.tub.flavor.color }} />}
+              lead={<FlavorDot look={s.tub.flavor} />}
               title={s.tub.flavor.name}
               sub={s.tub.groups.map((g, i) => (
                 <span key={i} className="mt-0.5 block">
@@ -237,7 +238,7 @@ export function Service({
             onToggle={() => state.serve(o.id, !state.isServed(o.id))}
             lead={
               <span className="flex w-9 flex-none justify-center">
-                <IceCream kind={l.container(o.containerId).kind} colors={plan.placed(o).map((id) => l.flavor(id).color)} size={30} />
+                <IceCream kind={l.container(o.containerId).kind} colors={plan.placed(o).map((id) => l.flavor(id))} size={30} />
               </span>
             }
             title={o.name}

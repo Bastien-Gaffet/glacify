@@ -138,7 +138,7 @@ export default function GuestOrder() {
             return (
               <div key={o.id} className={`page-in flex items-center gap-4 rounded-3xl p-4 ${served ? "bg-pistache/10" : "bg-surface"}`}>
                 <div className="flex w-14 flex-none justify-center">
-                  <IceCream kind={l.container(o.containerId).kind} colors={o.scoops.map((id) => l.flavor(id).color)} size={50} />
+                  <IceCream kind={l.container(o.containerId).kind} colors={o.scoops.map((id) => l.flavor(id))} size={50} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-display text-lg font-bold">{o.name}</p>

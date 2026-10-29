@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { and, count, eq, max } from "drizzle-orm";
 import { HARD_LIMITS } from "@contracts/plans";
-import { MAX_SCOOPS } from "@contracts/menu";
+import { DEFAULT_ACCENT, FLAVOR_PATTERNS, MAX_SCOOPS } from "@contracts/menu";
+
+const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 import { CONTAINER_KINDS, containers, flavors, toppings } from "@db/schema";
 import { authedQuery, createRouter } from "./middleware";
 import { getDb } from "./queries/connection";
@@ -32,12 +34,20 @@ export const menuRouter = createRouter({
       z.object({
         id: z.number().int().optional(),
         name: name(60),
-        color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+        color: hex,
+        pattern: z.enum(FLAVOR_PATTERNS).default("none"),
+        accent: hex.default(DEFAULT_ACCENT),
         available: z.boolean().default(true),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const values = { name: input.name, color: input.color.toUpperCase(), available: input.available ? 1 : 0 };
+      const values = {
+        name: input.name,
+        color: input.color.toUpperCase(),
+        pattern: input.pattern,
+        accent: input.accent.toUpperCase(),
+        available: input.available ? 1 : 0,
+      };
       if (input.id) {
         const [res] = await getDb().update(flavors).set(values).where(ownedBy.flavors(ctx.user.id, input.id));
         if (!res.affectedRows) notFound();

@@ -1,9 +1,11 @@
 import { useId } from "react";
-import type { ContainerKind } from "@contracts/menu";
+import type { ContainerKind, ScoopLook } from "@contracts/menu";
+import { PatternMarks } from "./FlavorPattern";
 
 /**
- * The ice cream itself: stacked scoops (bottom first) on a cone or in a cup.
- * An empty order shows dashed placeholder scoops.
+ * The ice cream itself: stacked scoops (bottom first) on a cone or in a cup,
+ * each in its flavor's colour and pattern. An empty order shows a dashed
+ * placeholder scoop.
  */
 export function IceCream({
   kind,
@@ -13,7 +15,8 @@ export function IceCream({
   className,
 }: {
   kind: ContainerKind;
-  colors: string[];
+  /** Bottom scoop first: a plain colour, or a flavor's full look */
+  colors: (string | ScoopLook)[];
   size?: number;
   /** The last scoop drops into place (while composing an order) */
   animateLast?: boolean;
@@ -44,15 +47,27 @@ export function IceCream({
           const cy = bottomCy - i * step;
           const cx = 30 + (i % 2 === 0 ? 0 : i % 4 === 1 ? -2.5 : 2.5);
           const last = i === n - 1;
-          return color ? (
-            <g key={`${i}-${color}`} className={animateLast && last ? "scoop-drop" : undefined}>
-              <circle cx={cx} cy={cy} r={r} fill={color} />
+          if (!color) return <circle key="empty" cx={cx} cy={cy} r={r} fill="none" stroke="#CFCAC5" strokeWidth="1.6" strokeDasharray="4 3.5" />;
+          const look = typeof color === "string" ? { color, pattern: "none" as const, accent: "" } : color;
+          return (
+            <g key={`${i}-${look.color}-${look.pattern}`} className={animateLast && last ? "scoop-drop" : undefined}>
+              <circle cx={cx} cy={cy} r={r} fill={look.color} />
+              {look.pattern !== "none" && (
+                <>
+                  <clipPath id={`${clip}-${i}`}>
+                    <circle cx={cx} cy={cy} r={r - 0.3} />
+                  </clipPath>
+                  <g clipPath={`url(#${clip}-${i})`}>
+                    <g transform={`translate(${cx - r} ${cy - r}) scale(${(2 * r) / 100})`}>
+                      <PatternMarks pattern={look.pattern} accent={look.accent} />
+                    </g>
+                  </g>
+                </>
+              )}
               <path d={`M${cx - r + 1.5} ${cy + 4} a${r} ${r} 0 0 0 ${2 * r - 3} 0`} fill="none" stroke="#000" strokeOpacity="0.07" strokeWidth="3" />
               <circle cx={cx} cy={cy} r={r - 0.5} fill="none" stroke="#000" strokeOpacity="0.08" />
               <ellipse cx={cx - 5} cy={cy - 5.5} rx="3.6" ry="2.2" fill="#fff" opacity="0.55" transform={`rotate(-25 ${cx - 5} ${cy - 5.5})`} />
             </g>
-          ) : (
-            <circle key="empty" cx={cx} cy={cy} r={r} fill="none" stroke="#CFCAC5" strokeWidth="1.6" strokeDasharray="4 3.5" />
           );
         })
         .reverse()}

@@ -2,6 +2,7 @@ import { Check, IceCreamBowl, IceCreamCone, X } from "lucide-react";
 import { clsx } from "clsx";
 import { inkOn, type Menu } from "@contracts/menu";
 import { IceCream } from "./IceCream";
+import { PatternOverlay } from "./FlavorPattern";
 import { Segmented } from "./Segmented";
 import { lookup } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
@@ -66,7 +67,7 @@ export function OrderForm({
     <div className="space-y-6">
       <div className="flex items-end gap-4">
         <div className="flex w-[84px] flex-none justify-center">
-          <IceCream kind={container.kind} colors={draft.scoops.map((id) => l.flavor(id).color)} size={76} animateLast />
+          <IceCream kind={container.kind} colors={draft.scoops.map((id) => l.flavor(id))} size={76} animateLast />
         </div>
         <div className="min-w-0 flex-1 space-y-3">
           <div>
@@ -148,20 +149,21 @@ export function OrderForm({
                 disabled={full || out}
                 onClick={() => set({ scoops: [...draft.scoops, f.id] })}
                 className={clsx(
-                  "relative flex min-h-[76px] flex-col items-start justify-end rounded-2xl p-2.5 text-left text-[13px] font-semibold leading-tight transition active:scale-95",
+                  "relative flex min-h-[76px] flex-col items-start justify-end overflow-hidden rounded-2xl p-2.5 text-left text-[13px] font-semibold leading-tight transition active:scale-95",
                   full && !n && "opacity-40",
                   out && "opacity-40",
                 )}
                 style={{ background: f.color, color: inkOn(f.color) }}
               >
+                <PatternOverlay look={f} />
                 <span className="absolute left-2.5 top-2.5 h-3 w-3 rounded-full bg-white/50" />
                 {n ? (
                   <span className="tabular absolute right-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-ink px-1.5 text-[12px] text-onink">
                     {n}
                   </span>
                 ) : null}
-                {f.name}
-                {out && <span className="text-[11px] font-medium opacity-80">{t("soldOut")}</span>}
+                <span className="relative">{f.name}</span>
+                {out && <span className="relative text-[11px] font-medium opacity-80">{t("soldOut")}</span>}
               </button>
             );
           })}

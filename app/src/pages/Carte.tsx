@@ -2,7 +2,8 @@ import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Check, IceCreamBowl, IceCreamCone, Minus, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { clsx } from "clsx";
-import { FLAVOR_PALETTE, MAX_SCOOPS, inkOn, type ContainerKind, type Menu } from "@contracts/menu";
+import { ACCENT_PALETTE, DEFAULT_ACCENT, FLAVOR_PALETTE, FLAVOR_PATTERNS, MAX_SCOOPS, inkOn, type ContainerKind, type FlavorPattern, type Menu } from "@contracts/menu";
+import { FlavorDot } from "@/components/FlavorPattern";
 import { trpc } from "@/providers/trpc";
 import { PageHeader } from "@/components/PageHeader";
 import { Sheet } from "@/components/Sheet";
@@ -14,7 +15,7 @@ import { useI18n, type TKey } from "@/lib/i18n";
 
 type Kind = "flavors" | "toppings" | "containers";
 type Editing =
-  | { kind: "flavors"; id?: number; name: string; color: string; available: boolean }
+  | { kind: "flavors"; id?: number; name: string; color: string; pattern: FlavorPattern; accent: string; available: boolean }
   | { kind: "toppings"; id?: number; name: string; available: boolean }
   | { kind: "containers"; id?: number; name: string; containerKind: ContainerKind; maxScoops: number; available: boolean };
 
@@ -71,7 +72,7 @@ function EditSheet({ editing, setEditing, onDone }: { editing: Editing | null; s
   const save = () => {
     const name = e.name.trim();
     if (!name) return;
-    if (e.kind === "flavors") saveFlavor.mutate({ id: e.id, name, color: e.color, available: e.available });
+    if (e.kind === "flavors") saveFlavor.mutate({ id: e.id, name, color: e.color, pattern: e.pattern, accent: e.accent, available: e.available });
     else if (e.kind === "toppings") saveTopping.mutate({ id: e.id, name, available: e.available });
     else saveContainer.mutate({ id: e.id, name, kind: e.containerKind, maxScoops: e.maxScoops, available: e.available });
   };
@@ -105,7 +106,7 @@ function EditSheet({ editing, setEditing, onDone }: { editing: Editing | null; s
       <div className="space-y-5">
         {e.kind === "flavors" && (
           <div className="flex justify-center py-2">
-            <span className="flex h-24 w-24 items-center justify-center rounded-full text-sm font-semibold shadow-[inset_0_-6px_0_rgb(0_0_0/0.08)]" style={{ background: e.color, color: inkOn(e.color) }} />
+            <FlavorDot look={e} className="h-24 w-24 shadow-[inset_0_-6px_0_rgb(0_0_0/0.08)]" />
           </div>
         )}
         <div>
@@ -136,6 +137,49 @@ function EditSheet({ editing, setEditing, onDone }: { editing: Editing | null; s
               <input type="color" value={e.color} onChange={(ev) => setEditing({ ...e, color: ev.target.value })} className="h-9 w-12 cursor-pointer rounded-lg border-0 bg-transparent" />
               {t("otherColor")}
             </label>
+          </div>
+        )}
+        {e.kind === "flavors" && (
+          <div>
+            <p className="label">{t("pattern")}</p>
+            <div className="grid grid-cols-5 gap-2">
+              {FLAVOR_PATTERNS.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setEditing({ ...e, pattern: p })}
+                  aria-pressed={e.pattern === p}
+                  className={clsx(
+                    "flex flex-col items-center gap-1.5 rounded-2xl py-2 text-[12px] font-medium transition active:scale-95",
+                    e.pattern === p ? "bg-ink text-onink" : "bg-surface text-ink",
+                  )}
+                >
+                  <FlavorDot look={{ color: e.color, pattern: p, accent: e.accent }} className="h-10 w-10" />
+                  {t(`pattern_${p}`)}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1.5 text-xs text-muted">{t("patternHint")}</p>
+            {e.pattern !== "none" && (
+              <>
+                <p className="label mt-4">{t("patternColor")}</p>
+                <div className="grid grid-cols-8 gap-2">
+                  {ACCENT_PALETTE.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setEditing({ ...e, accent: c })}
+                      className="flex aspect-square items-center justify-center rounded-full shadow-[inset_0_0_0_1px_rgb(0_0_0/0.12)] transition active:scale-90"
+                      style={{ background: c, color: inkOn(c) }}
+                      aria-label={t("colorN", { c })}
+                      aria-pressed={e.accent.toUpperCase() === c.toUpperCase()}
+                    >
+                      {e.accent.toUpperCase() === c.toUpperCase() && <Check size={16} strokeWidth={3} />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
         {e.kind === "containers" && (
@@ -208,17 +252,17 @@ export default function Carte() {
         title={t("flavors")}
         hint={[tn("flavorCount", flavors.length), out ? tn("soldOutCount", out) : ""].filter(Boolean).join(", ")}
         addLabel={t("addFlavor")}
-        onAdd={() => setEditing({ kind: "flavors", name: "", color: FLAVOR_PALETTE[flavors.length % FLAVOR_PALETTE.length], available: true })}
+        onAdd={() => setEditing({ kind: "flavors", name: "", color: FLAVOR_PALETTE[flavors.length % FLAVOR_PALETTE.length], pattern: "none", accent: DEFAULT_ACCENT, available: true })}
       >
         {flavors.map((f) => (
           <Row
             key={f.id}
-            lead={<span className="h-10 w-10 flex-none rounded-full shadow-[inset_0_0_0_1px_rgb(0_0_0/0.08)]" style={{ background: f.color }} />}
+            lead={<FlavorDot look={f} />}
             title={f.name}
             sub={f.available ? t("available") : t("soldOut")}
             available={f.available}
             onToggle={(v) => toggle("flavors", f.id, v)}
-            onEdit={() => setEditing({ kind: "flavors", id: f.id, name: f.name, color: f.color, available: f.available })}
+            onEdit={() => setEditing({ kind: "flavors", id: f.id, name: f.name, color: f.color, pattern: f.pattern, accent: f.accent, available: f.available })}
           />
         ))}
       </Section>

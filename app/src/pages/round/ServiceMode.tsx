@@ -6,6 +6,8 @@ import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { clsx } from "clsx";
 import { buildPlan } from "@contracts/plan";
 import { IceCream } from "@/components/IceCream";
+import { PatternOverlay } from "@/components/FlavorPattern";
+import type { ScoopLook } from "@contracts/menu";
 import { describeOrder, lookup, plural } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { groupLabel, serviceSteps, stepDone, tileDone, type ServiceStep } from "./serviceSteps";
@@ -51,7 +53,8 @@ function Confetti({ colors, count = 18 }: { colors: string[]; count?: number }) 
 }
 
 /** The tub goes back in the freezer: its lid drops on, a burst of colour */
-function FreezerParty({ color, label }: { color: string; label: string }) {
+function FreezerParty({ look, label }: { look: ScoopLook; label: string }) {
+  const { color } = look;
   return (
     <motion.div
       className="pointer-events-none fixed inset-0 z-[70] flex flex-col items-center justify-center bg-canvas/85 backdrop-blur-sm"
@@ -68,7 +71,9 @@ function FreezerParty({ color, label }: { color: string; label: string }) {
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 420, damping: 18 }}
         >
-          <div className="absolute inset-x-[3px] bottom-[3px] top-3 rounded-b-[23px] rounded-t-[14px]" style={{ background: color }} />
+          <div className="absolute inset-x-[3px] bottom-[3px] top-3 overflow-hidden rounded-b-[23px] rounded-t-[14px]" style={{ background: color }}>
+            <PatternOverlay look={look} />
+          </div>
         </motion.div>
         <motion.div
           className="absolute inset-x-0 top-0 h-9 rounded-2xl bg-ink"
@@ -165,7 +170,7 @@ export function ServiceMode({
 
   const [currentId, setCurrentId] = useState<string>(() => steps[firstUndone()]?.id ?? "end");
   const [dir, setDir] = useState(1);
-  const [party, setParty] = useState<{ color: string; label: string; n: number } | null>(null);
+  const [party, setParty] = useState<{ look: ScoopLook; label: string; n: number } | null>(null);
 
   // Follow the step by id: a late order may add or remove a tub before it
   let index = currentId === "end" ? steps.length : steps.findIndex((s) => s.id === currentId);
@@ -185,9 +190,9 @@ export function ServiceMode({
   const nextRef = useRef(next);
   nextRef.current = next;
 
-  const celebrate = (color: string, label: string) => {
+  const celebrate = (look: ScoopLook, label: string) => {
     buzz(30);
-    setParty({ color, label, n: Date.now() });
+    setParty({ look, label, n: Date.now() });
     setTimeout(
       () => {
         setParty(null);
@@ -221,7 +226,7 @@ export function ServiceMode({
     return plan
       .placed(o)
       .filter((f) => rank.get(f)! < tubIndex || (withTub && rank.get(f) === tubIndex))
-      .map((f) => l.flavor(f).color);
+      .map((f) => l.flavor(f));
   };
 
   let content: ReactNode;
@@ -236,7 +241,7 @@ export function ServiceMode({
           {left === 0 && <Confetti colors={colors.length ? colors : ["rgb(var(--accent))"]} count={28} />}
           {plan.orders.slice(0, 5).map((o, i) => (
             <motion.div key={o.id} initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 + i * 0.07, type: "spring", stiffness: 400, damping: 20 }}>
-              <IceCream kind={l.container(o.containerId).kind} colors={plan.placed(o).map((f) => l.flavor(f).color)} size={i === 2 ? 64 : 50} />
+              <IceCream kind={l.container(o.containerId).kind} colors={plan.placed(o).map((f) => l.flavor(f))} size={i === 2 ? 64 : 50} />
             </motion.div>
           ))}
         </div>
@@ -317,7 +322,7 @@ export function ServiceMode({
       }
       const last = step.tiles.every((x) => x === t || state.checks.has(x.key));
       state.setChecks(last ? [t.key, step.key] : [t.key], true);
-      if (last) celebrate(tub.flavor.color, L.t("toFreezer"));
+      if (last) celebrate(tub.flavor, L.t("toFreezer"));
     };
     content = (
       <>
@@ -328,12 +333,14 @@ export function ServiceMode({
           lead={
             <motion.span
               key={tub.flavorId}
-              className="h-[72px] w-[72px] flex-none rounded-full shadow-[inset_0_-6px_0_rgb(0_0_0/0.08),inset_0_0_0_1px_rgb(0_0_0/0.06)]"
+              className="relative h-[72px] w-[72px] flex-none overflow-hidden rounded-full shadow-[inset_0_-6px_0_rgb(0_0_0/0.08),inset_0_0_0_1px_rgb(0_0_0/0.06)]"
               style={{ background: tub.flavor.color }}
               initial={{ scale: 0.5, rotate: -20 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: "spring", stiffness: 380, damping: 16 }}
-            />
+            >
+              <PatternOverlay look={tub.flavor} />
+            </motion.span>
           }
         />
         <p className="-mt-3 mb-5 text-[15px]">
@@ -372,7 +379,7 @@ export function ServiceMode({
           label: L.t("toFreezer"),
           onClick: () => {
             state.setChecks([step.key, ...step.tiles.map((t) => t.key)], true);
-            celebrate(tub.flavor.color, L.t("toFreezer"));
+            celebrate(tub.flavor, L.t("toFreezer"));
           },
         };
   } else if (step.kind === "toppings") {
@@ -403,7 +410,7 @@ export function ServiceMode({
                         } else state.setChecks([t.key], true);
                       }}
                     >
-                      <IceCream kind={l.container(t.order.containerId).kind} colors={plan.placed(t.order).map((f) => l.flavor(f).color)} size={40} />
+                      <IceCream kind={l.container(t.order.containerId).kind} colors={plan.placed(t.order).map((f) => l.flavor(f))} size={40} />
                       <span className="w-full truncate text-[15px] font-semibold">{t.order.name}</span>
                     </Tile>
                   );
@@ -449,7 +456,7 @@ export function ServiceMode({
                 }}
               >
                 <motion.span animate={served ? { y: [0, -10, 0], rotate: [0, -6, 0] } : {}} transition={{ duration: 0.4 }}>
-                  <IceCream kind={l.container(o.containerId).kind} colors={plan.placed(o).map((f) => l.flavor(f).color)} size={48} />
+                  <IceCream kind={l.container(o.containerId).kind} colors={plan.placed(o).map((f) => l.flavor(f))} size={48} />
                 </motion.span>
                 <span className="w-full truncate text-[16px] font-semibold">{o.name}</span>
                 <span className="line-clamp-2 text-[12px] leading-snug text-muted">{describeOrder(menu, o)}</span>
@@ -536,7 +543,7 @@ export function ServiceMode({
           </footer>
         )}
       </div>
-      <AnimatePresence>{party && <FreezerParty key={party.n} color={party.color} label={party.label} />}</AnimatePresence>
+      <AnimatePresence>{party && <FreezerParty key={party.n} look={party.look} label={party.label} />}</AnimatePresence>
     </MotionConfig>,
     document.body,
   );

@@ -2,11 +2,16 @@
 
 export type ContainerKind = "cone" | "cup";
 
-export type Flavor = {
+/** Drawn over the scoop's colour: chocolate flecks, a caramel swirl, fruit chunks, vanilla seeds */
+export const FLAVOR_PATTERNS = ["none", "flecks", "swirl", "chunks", "seeds"] as const;
+export type FlavorPattern = (typeof FLAVOR_PATTERNS)[number];
+
+/** How a scoop looks */
+export type ScoopLook = { color: string; pattern: FlavorPattern; accent: string };
+
+export type Flavor = ScoopLook & {
   id: number;
   name: string;
-  /** #RRGGBB, the colour of the scoop */
-  color: string;
   available: boolean;
   /** Removed from the carte but still named in past orders */
   archived: boolean;
@@ -17,7 +22,7 @@ export type Topping = { id: number; name: string; available: boolean; archived: 
 export type Container = {
   id: number;
   name: string;
-  /** In a cone the scoops are stacked in order; in a cup the order is free */
+  /** Held in the hand or set on the table; the service orders the scoops the same way in both */
   kind: ContainerKind;
   maxScoops: number;
   available: boolean;
@@ -29,19 +34,19 @@ export type Menu = { flavors: Flavor[]; toppings: Topping[]; containers: Contain
 /** Languages the classic carte is written in (the app's languages) */
 export type MenuLang = "fr" | "en";
 
-export const DEFAULT_FLAVORS: { fr: string; en: string; color: string }[] = [
-  { fr: "Vanille", en: "Vanilla", color: "#F2E3B3" },
+export const DEFAULT_FLAVORS: ({ fr: string; en: string } & Partial<ScoopLook> & { color: string })[] = [
+  { fr: "Vanille", en: "Vanilla", color: "#F2E3B3", pattern: "seeds", accent: "#3B2A20" },
   { fr: "Chocolat", en: "Chocolate", color: "#6B3F2A" },
-  { fr: "Fraise", en: "Strawberry", color: "#F29BB0" },
-  { fr: "Pistache", en: "Pistachio", color: "#A9CF8A" },
-  { fr: "Caramel beurre salé", en: "Salted caramel", color: "#D49A5B" },
+  { fr: "Fraise", en: "Strawberry", color: "#F29BB0", pattern: "chunks", accent: "#C23A55" },
+  { fr: "Pistache", en: "Pistachio", color: "#A9CF8A", pattern: "chunks", accent: "#6F9A4F" },
+  { fr: "Caramel beurre salé", en: "Salted caramel", color: "#D49A5B", pattern: "swirl", accent: "#A5652B" },
   { fr: "Citron", en: "Lemon", color: "#F5E06A" },
-  { fr: "Menthe chocolat", en: "Mint chocolate chip", color: "#9FE0C8" },
+  { fr: "Menthe chocolat", en: "Mint chocolate chip", color: "#9FE0C8", pattern: "flecks", accent: "#3E2A22" },
   { fr: "Mangue", en: "Mango", color: "#FFB547" },
-  { fr: "Framboise", en: "Raspberry", color: "#D9416A" },
+  { fr: "Framboise", en: "Raspberry", color: "#D9416A", pattern: "seeds", accent: "#8E1F3D" },
   { fr: "Café", en: "Coffee", color: "#9C6B4E" },
-  { fr: "Noix de coco", en: "Coconut", color: "#F3F0EA" },
-  { fr: "Stracciatella", en: "Stracciatella", color: "#E8E0D2" },
+  { fr: "Noix de coco", en: "Coconut", color: "#F3F0EA", pattern: "flecks", accent: "#C9BBA5" },
+  { fr: "Stracciatella", en: "Stracciatella", color: "#E8E0D2", pattern: "flecks", accent: "#3E2A22" },
 ];
 
 export const DEFAULT_TOPPINGS: { fr: string; en: string }[] = [
@@ -57,6 +62,12 @@ export const DEFAULT_CONTAINERS: { fr: string; en: string; kind: ContainerKind; 
   { fr: "Cornet", en: "Cone", kind: "cone", maxScoops: 3 },
   { fr: "Pot", en: "Cup", kind: "cup", maxScoops: 4 },
 ];
+
+/** The pattern's colour when none was chosen: chocolate brown */
+export const DEFAULT_ACCENT = "#3E2A22";
+
+/** Picker swatches for a pattern: chocolate, caramel, fruit, nuts, cream */
+export const ACCENT_PALETTE = ["#3E2A22", "#6B3F2A", "#1C1917", "#FFFFFF", "#A5652B", "#C23A55", "#8E1F3D", "#6F9A4F", "#F5E06A", "#C9BBA5", "#E86A4A", "#7FB8E8"];
 
 /** Picker swatches for new flavors. */
 export const FLAVOR_PALETTE = [

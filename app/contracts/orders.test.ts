@@ -4,9 +4,9 @@ import type { Menu } from "./menu";
 
 const menu: Menu = {
   flavors: [
-    { id: 1, name: "Vanille", color: "#fff", available: true, archived: false },
-    { id: 2, name: "Mangue", color: "#fff", available: false, archived: false },
-    { id: 3, name: "Ancien", color: "#fff", available: true, archived: true },
+    { id: 1, name: "Vanille", color: "#fff", pattern: "none", accent: "#000", available: true, archived: false },
+    { id: 2, name: "Mangue", color: "#fff", pattern: "none", accent: "#000", available: false, archived: false },
+    { id: 3, name: "Ancien", color: "#fff", pattern: "none", accent: "#000", available: true, archived: true },
   ],
   toppings: [{ id: 10, name: "Chantilly", available: true, archived: false }],
   containers: [{ id: 100, name: "Cornet", kind: "cone", maxScoops: 2, available: true, archived: false }],

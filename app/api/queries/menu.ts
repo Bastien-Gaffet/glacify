@@ -1,9 +1,17 @@
 import { and, asc, eq } from "drizzle-orm";
-import { DEFAULT_CONTAINERS, DEFAULT_FLAVORS, DEFAULT_TOPPINGS, type Menu, type MenuLang } from "@contracts/menu";
+import { DEFAULT_ACCENT, DEFAULT_CONTAINERS, DEFAULT_FLAVORS, DEFAULT_TOPPINGS, FLAVOR_PATTERNS, type FlavorPattern, type Menu, type MenuLang } from "@contracts/menu";
 import { containers, flavors, toppings } from "@db/schema";
 import { getDb } from "./connection";
 
 const bool = (v: number) => v === 1;
+const pattern = (v: string): FlavorPattern => ((FLAVOR_PATTERNS as readonly string[]).includes(v) ? (v as FlavorPattern) : "none");
+/** A default flavor as a row: its name in the host's language, its look */
+const defaultFlavor = (f: (typeof DEFAULT_FLAVORS)[number], lang: MenuLang) => ({
+  name: f[lang],
+  color: f.color,
+  pattern: f.pattern ?? "none",
+  accent: f.accent ?? DEFAULT_ACCENT,
+});
 
 /** The host's whole carte, archived items included (past orders still name them). */
 export async function loadMenu(userId: number): Promise<Menu> {
@@ -22,6 +30,8 @@ export async function loadMenu(userId: number): Promise<Menu> {
       id: x.id,
       name: x.name,
       color: x.color,
+      pattern: pattern(x.pattern),
+      accent: x.accent,
       available: bool(x.available),
       archived: bool(x.archived),
     })),
@@ -40,7 +50,7 @@ export async function loadMenu(userId: number): Promise<Menu> {
 /** A new host starts with a classic carte, ready to serve, in their language. */
 export async function seedMenu(userId: number, lang: MenuLang) {
   const db = getDb();
-  await db.insert(flavors).values(DEFAULT_FLAVORS.map((f, i) => ({ name: f[lang], color: f.color, userId, position: i })));
+  await db.insert(flavors).values(DEFAULT_FLAVORS.map((f, i) => ({ ...defaultFlavor(f, lang), userId, position: i })));
   await db.insert(toppings).values(DEFAULT_TOPPINGS.map((t, i) => ({ name: t[lang], userId, position: i })));
   await db.insert(containers).values(DEFAULT_CONTAINERS.map((c, i) => ({ name: c[lang], kind: c.kind, maxScoops: c.maxScoops, userId, position: i })));
 }
@@ -61,7 +71,7 @@ export async function restoreDefaults(userId: number, lang: MenuLang) {
   const f = DEFAULT_FLAVORS.filter(missing(has.f));
   const t = DEFAULT_TOPPINGS.filter(missing(has.t));
   const c = DEFAULT_CONTAINERS.filter(missing(has.c));
-  if (f.length) await db.insert(flavors).values(f.map((x, i) => ({ name: x[lang], color: x.color, userId, position: end(i) })));
+  if (f.length) await db.insert(flavors).values(f.map((x, i) => ({ ...defaultFlavor(x, lang), userId, position: end(i) })));
   if (t.length) await db.insert(toppings).values(t.map((x, i) => ({ name: x[lang], userId, position: end(i) })));
   if (c.length)
     await db.insert(containers).values(c.map((x, i) => ({ name: x[lang], kind: x.kind, maxScoops: x.maxScoops, userId, position: end(i) })));
