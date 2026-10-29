@@ -74,6 +74,16 @@ sur le modèle d'Equiliz et Babelibris (l'ancien code n'existait plus que sous f
   serveur tourne avec `BETA_PREMIUM=false` (sans la variable, tout reste gratuit). À ne
   rallumer que sur décision de Bastien.
 
+## Langues (29 oct. 2026)
+
+Français et anglais, sur le modèle d'Equiliz : `src/lib/i18n.tsx`, dictionnaires
+`src/lib/locales/fr.ts` (référence) et `en.ts` (anglais britannique, « carte » devient « menu »).
+Choix dans Moi > Préférences > Langue, sinon la langue du téléphone. La page invité a un
+sélecteur FR/EN. Le serveur n'écrit aucun texte : il renvoie des codes d'erreur
+(`contracts/errors.ts`), traduits par l'application. La carte classique est créée dans la langue
+choisie (`DEFAULT_FLAVORS` porte les deux noms), et « Remettre les parfums classiques » reconnaît
+un parfum sous ses deux noms.
+
 ## Direction artistique : « gelato chic »
 
 Choisie par Bastien le 25 octobre 2026. Un comptoir clair et lumineux, une typographie forte, et

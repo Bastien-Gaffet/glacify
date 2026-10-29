@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { TRPCError } from "@trpc/server";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { FREE_LIMITS } from "@contracts/plans";
 import { orders, rounds } from "@db/schema";
@@ -7,6 +6,7 @@ import { authedQuery, createRouter } from "./middleware";
 import { newRoundCode } from "./lib/codes";
 import { isPremium } from "./lib/entitlements";
 import { getDb } from "./queries/connection";
+import { fail } from "./lib/fail";
 import { loadMenu } from "./queries/menu";
 import {
   assertOpenRoundRoom,
@@ -27,7 +27,7 @@ async function ownedOrder(userId: number, orderId: number) {
     .innerJoin(rounds, eq(rounds.id, orders.roundId))
     .where(and(eq(orders.id, orderId), eq(rounds.userId, userId)))
     .limit(1);
-  return row ?? notFound("Commande introuvable");
+  return row ?? notFound("order.notFound");
 }
 
 export const roundsRouter = createRouter({
@@ -80,7 +80,7 @@ export const roundsRouter = createRouter({
           if ((e as { cause?: { code?: string } }).cause?.code !== "ER_DUP_ENTRY") throw e;
         }
       }
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Réessayez" });
+      fail("INTERNAL_SERVER_ERROR", "retry");
     }),
 
   get: authedQuery.input(z.object({ id })).query(async ({ ctx, input }) => {
@@ -179,7 +179,7 @@ export const roundsRouter = createRouter({
           .update(orders)
           .set(values)
           .where(and(eq(orders.id, orderId), eq(orders.roundId, round.id)));
-        if (!res.affectedRows) notFound("Commande introuvable");
+        if (!res.affectedRows) notFound("order.notFound");
         return { id: orderId };
       }
       await assertOrderRoom(ctx.user, round.id);

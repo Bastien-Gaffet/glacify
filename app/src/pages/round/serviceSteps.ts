@@ -1,6 +1,7 @@
 import type { Plan, Tub, TubGroup } from "@contracts/plan";
 import type { Container, Menu, Topping } from "@contracts/menu";
-import { lookup, plural } from "@/lib/format";
+import { listOf, lookup, plural } from "@/lib/format";
+import { i18n } from "@/lib/i18n";
 import type { ServiceState } from "./useServiceState";
 import type { RoundOrder } from "./types";
 
@@ -78,14 +79,13 @@ export function stepDone(step: ServiceStep, state: ServiceState, plan: Plan<Roun
   }
 }
 
-const listFr = (items: string[]) => (items.length > 1 ? `${items.slice(0, -1).join(", ")} et ${items.at(-1)}` : (items[0] ?? ""));
-
 /** "Sur mangue et chocolat", "Dans 2 cornets et 1 pot vides" (container names are free, so no article) */
 export function groupLabel(group: TubGroup<RoundOrder>, menu: Menu) {
-  if (group.base.length) return `Sur ${listFr(group.base.map((f) => f.name.toLowerCase()))}`;
+  const { t, tn } = i18n();
+  if (group.base.length) return t("groupOn", { list: listOf(group.base.map((f) => f.name.toLowerCase())) });
   const l = lookup(menu);
   const byContainer = new Map<number, number>();
   for (const { order } of group.people) byContainer.set(order.containerId, (byContainer.get(order.containerId) ?? 0) + 1);
   const parts = [...byContainer].map(([id, n]) => plural(n, l.container(id).name.toLowerCase()));
-  return `Dans ${listFr(parts)} ${group.people.length > 1 ? "vides" : "vide"}`;
+  return tn("groupEmpty", group.people.length, { list: listOf(parts) });
 }

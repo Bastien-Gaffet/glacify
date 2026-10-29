@@ -10,6 +10,7 @@ import { Switch } from "@/components/Switch";
 import { Segmented } from "@/components/Segmented";
 import { confirmDialog } from "@/components/Confirm";
 import { showError } from "@/lib/errors";
+import { useI18n, type TKey } from "@/lib/i18n";
 
 type Kind = "flavors" | "toppings" | "containers";
 type Editing =
@@ -35,6 +36,7 @@ function Section({ title, hint, onAdd, addLabel, children }: { title: string; hi
 }
 
 function Row({ lead, title, sub, available, onToggle, onEdit }: { lead?: ReactNode; title: string; sub: string; available: boolean; onToggle: (v: boolean) => void; onEdit: () => void }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-3 pr-4">
       <button className="flex min-h-[64px] min-w-0 flex-1 items-center gap-3 pl-4 text-left" onClick={onEdit}>
@@ -44,12 +46,19 @@ function Row({ lead, title, sub, available, onToggle, onEdit }: { lead?: ReactNo
           <span className="block text-sm text-muted">{sub}</span>
         </span>
       </button>
-      <Switch checked={available} onChange={onToggle} label={`${title} disponible`} />
+      <Switch checked={available} onChange={onToggle} label={t("availableLabel", { name: title })} />
     </div>
   );
 }
 
+const SHEET_TITLES: Record<Kind, [edit: TKey, add: TKey]> = {
+  flavors: ["editFlavor", "newFlavor"],
+  toppings: ["editTopping", "newTopping"],
+  containers: ["editContainer", "newContainer"],
+};
+
 function EditSheet({ editing, setEditing, onDone }: { editing: Editing | null; setEditing: (e: Editing | null) => void; onDone: () => void }) {
+  const { t } = useI18n();
   const opts = { onSuccess: () => (onDone(), setEditing(null)), onError: showError };
   const saveFlavor = trpc.menu.saveFlavor.useMutation(opts);
   const saveTopping = trpc.menu.saveTopping.useMutation(opts);
@@ -66,22 +75,21 @@ function EditSheet({ editing, setEditing, onDone }: { editing: Editing | null; s
     else if (e.kind === "toppings") saveTopping.mutate({ id: e.id, name, available: e.available });
     else saveContainer.mutate({ id: e.id, name, kind: e.containerKind, maxScoops: e.maxScoops, available: e.available });
   };
-  const what = e.kind === "flavors" ? "parfum" : e.kind === "toppings" ? "supplément" : "contenant";
 
   return (
     <Sheet
       open
       onClose={() => setEditing(null)}
-      title={e.id ? `Modifier le ${what}` : `Nouveau ${what}`}
+      title={t(SHEET_TITLES[e.kind][e.id ? 0 : 1])}
       footer={
         <div className="flex gap-2">
           {e.id && (
             <button
               className="icon-btn h-[52px] w-[52px] bg-surface hover:text-danger"
-              aria-label="Retirer de la carte"
+              aria-label={t("removeFromMenu")}
               disabled={busy}
               onClick={async () => {
-                if (await confirmDialog({ title: `Retirer « ${e.name} » de la carte ?`, message: "Les anciennes commandes le garderont.", confirmLabel: "Retirer", danger: true }))
+                if (await confirmDialog({ title: t("removeConfirm", { name: e.name }), message: t("removeMsg"), confirmLabel: t("remove"), danger: true }))
                   remove.mutate({ kind: e.kind, id: e.id! });
               }}
             >
@@ -89,7 +97,7 @@ function EditSheet({ editing, setEditing, onDone }: { editing: Editing | null; s
             </button>
           )}
           <button className="btn-ink flex-1 py-4" disabled={!e.name.trim() || busy} onClick={save}>
-            {e.id ? "Enregistrer" : "Ajouter"}
+            {e.id ? t("save") : t("add")}
           </button>
         </div>
       }
@@ -102,13 +110,13 @@ function EditSheet({ editing, setEditing, onDone }: { editing: Editing | null; s
         )}
         <div>
           <label className="label" htmlFor="item-name">
-            Nom
+            {t("name")}
           </label>
           <input id="item-name" className="field" value={e.name} onChange={(ev) => setEditing({ ...e, name: ev.target.value })} maxLength={e.kind === "containers" ? 40 : 60} autoFocus={!e.id} />
         </div>
         {e.kind === "flavors" && (
           <div>
-            <p className="label">Couleur</p>
+            <p className="label">{t("color")}</p>
             <div className="grid grid-cols-8 gap-2">
               {FLAVOR_PALETTE.map((c) => (
                 <button
@@ -117,7 +125,7 @@ function EditSheet({ editing, setEditing, onDone }: { editing: Editing | null; s
                   onClick={() => setEditing({ ...e, color: c })}
                   className="flex aspect-square items-center justify-center rounded-full shadow-[inset_0_0_0_1px_rgb(0_0_0/0.08)] transition active:scale-90"
                   style={{ background: c, color: inkOn(c) }}
-                  aria-label={`Couleur ${c}`}
+                  aria-label={t("colorN", { c })}
                   aria-pressed={e.color.toUpperCase() === c.toUpperCase()}
                 >
                   {e.color.toUpperCase() === c.toUpperCase() && <Check size={16} strokeWidth={3} />}
@@ -126,33 +134,33 @@ function EditSheet({ editing, setEditing, onDone }: { editing: Editing | null; s
             </div>
             <label className="mt-3 flex items-center gap-3 text-sm text-muted">
               <input type="color" value={e.color} onChange={(ev) => setEditing({ ...e, color: ev.target.value })} className="h-9 w-12 cursor-pointer rounded-lg border-0 bg-transparent" />
-              Autre couleur
+              {t("otherColor")}
             </label>
           </div>
         )}
         {e.kind === "containers" && (
           <>
             <div>
-              <p className="label">Type</p>
+              <p className="label">{t("type")}</p>
               <Segmented
-                label="Type"
+                label={t("type")}
                 value={e.containerKind}
                 onChange={(v) => setEditing({ ...e, containerKind: v })}
                 options={[
-                  { value: "cone", label: (<><IceCreamCone size={16} /> Cornet</>) },
-                  { value: "cup", label: (<><IceCreamBowl size={16} /> Pot</>) },
+                  { value: "cone", label: (<><IceCreamCone size={16} /> {t("cone")}</>) },
+                  { value: "cup", label: (<><IceCreamBowl size={16} /> {t("cup")}</>) },
                 ]}
               />
-              <p className="mt-1.5 text-xs text-muted">Dans un cornet, les boules sont posées dans l'ordre choisi. Dans un pot, Glacify les range pour servir plus vite.</p>
+              <p className="mt-1.5 text-xs text-muted">{t("containerTypeHint")}</p>
             </div>
             <div>
-              <p className="label">Boules au maximum</p>
+              <p className="label">{t("maxScoops")}</p>
               <div className="flex items-center gap-4">
-                <button className="icon-btn bg-surface text-ink" disabled={e.maxScoops <= 1} onClick={() => setEditing({ ...e, maxScoops: e.maxScoops - 1 })} aria-label="Moins">
+                <button className="icon-btn bg-surface text-ink" disabled={e.maxScoops <= 1} onClick={() => setEditing({ ...e, maxScoops: e.maxScoops - 1 })} aria-label={t("less")}>
                   <Minus size={18} />
                 </button>
                 <span className="tabular w-8 text-center font-display text-3xl font-bold">{e.maxScoops}</span>
-                <button className="icon-btn bg-surface text-ink" disabled={e.maxScoops >= MAX_SCOOPS} onClick={() => setEditing({ ...e, maxScoops: e.maxScoops + 1 })} aria-label="Plus">
+                <button className="icon-btn bg-surface text-ink" disabled={e.maxScoops >= MAX_SCOOPS} onClick={() => setEditing({ ...e, maxScoops: e.maxScoops + 1 })} aria-label={t("more")}>
                   <Plus size={18} />
                 </button>
               </div>
@@ -165,6 +173,7 @@ function EditSheet({ editing, setEditing, onDone }: { editing: Editing | null; s
 }
 
 export default function Carte() {
+  const { t, tn, lang } = useI18n();
   const { data: menu } = trpc.menu.get.useQuery();
   const [editing, setEditing] = useState<Editing | null>(null);
   const utils = trpc.useUtils();
@@ -174,7 +183,7 @@ export default function Carte() {
   };
   const setAvailable = trpc.menu.setAvailable.useMutation({ onError: (e) => (showError(e), refresh()) });
   const restore = trpc.menu.restoreDefaults.useMutation({
-    onSuccess: ({ added }) => (refresh(), toast.success(added ? `${added} élément${added > 1 ? "s" : ""} remis sur la carte` : "Rien ne manquait")),
+    onSuccess: ({ added }) => (refresh(), toast.success(added ? tn("restored", added) : t("nothingMissing"))),
     onError: showError,
   });
   if (!menu) return null;
@@ -191,14 +200,14 @@ export default function Carte() {
 
   return (
     <div className="page-in space-y-9">
-      <PageHeader title="Ma carte">
-        <p className="mt-2 text-[15px] text-muted">Ce que vous servez. Un parfum épuisé disparaît du lien de commande.</p>
+      <PageHeader title={t("myMenu")}>
+        <p className="mt-2 text-[15px] text-muted">{t("menuIntro")}</p>
       </PageHeader>
 
       <Section
-        title="Parfums"
-        hint={`${flavors.length} parfums${out ? `, ${out} épuisé${out > 1 ? "s" : ""}` : ""}`}
-        addLabel="Ajouter un parfum"
+        title={t("flavors")}
+        hint={[tn("flavorCount", flavors.length), out ? tn("soldOutCount", out) : ""].filter(Boolean).join(", ")}
+        addLabel={t("addFlavor")}
         onAdd={() => setEditing({ kind: "flavors", name: "", color: FLAVOR_PALETTE[flavors.length % FLAVOR_PALETTE.length], available: true })}
       >
         {flavors.map((f) => (
@@ -206,7 +215,7 @@ export default function Carte() {
             key={f.id}
             lead={<span className="h-10 w-10 flex-none rounded-full shadow-[inset_0_0_0_1px_rgb(0_0_0/0.08)]" style={{ background: f.color }} />}
             title={f.name}
-            sub={f.available ? "Disponible" : "Épuisé"}
+            sub={f.available ? t("available") : t("soldOut")}
             available={f.available}
             onToggle={(v) => toggle("flavors", f.id, v)}
             onEdit={() => setEditing({ kind: "flavors", id: f.id, name: f.name, color: f.color, available: f.available })}
@@ -214,24 +223,24 @@ export default function Carte() {
         ))}
       </Section>
 
-      <Section title="Suppléments" hint="Chantilly, coulis, éclats…" addLabel="Ajouter un supplément" onAdd={() => setEditing({ kind: "toppings", name: "", available: true })}>
-        {live(menu.toppings).length === 0 && <p className="px-4 py-5 text-sm text-muted">Aucun supplément.</p>}
-        {live(menu.toppings).map((t) => (
+      <Section title={t("toppings")} hint={t("toppingsHint")} addLabel={t("addTopping")} onAdd={() => setEditing({ kind: "toppings", name: "", available: true })}>
+        {live(menu.toppings).length === 0 && <p className="px-4 py-5 text-sm text-muted">{t("noTopping")}</p>}
+        {live(menu.toppings).map((tp) => (
           <Row
-            key={t.id}
-            title={t.name}
-            sub={t.available ? "Disponible" : "Épuisé"}
-            available={t.available}
-            onToggle={(v) => toggle("toppings", t.id, v)}
-            onEdit={() => setEditing({ kind: "toppings", id: t.id, name: t.name, available: t.available })}
+            key={tp.id}
+            title={tp.name}
+            sub={tp.available ? t("available") : t("soldOut")}
+            available={tp.available}
+            onToggle={(v) => toggle("toppings", tp.id, v)}
+            onEdit={() => setEditing({ kind: "toppings", id: tp.id, name: tp.name, available: tp.available })}
           />
         ))}
       </Section>
 
       <Section
-        title="Contenants"
-        hint="Cornets, pots, et leur nombre de boules"
-        addLabel="Ajouter un contenant"
+        title={t("containers")}
+        hint={t("containersHint")}
+        addLabel={t("addContainer")}
         onAdd={() => setEditing({ kind: "containers", name: "", containerKind: "cup", maxScoops: 3, available: true })}
       >
         {live(menu.containers).map((c) => (
@@ -243,7 +252,7 @@ export default function Carte() {
               </span>
             }
             title={c.name}
-            sub={`${c.maxScoops} boule${c.maxScoops > 1 ? "s" : ""} au maximum`}
+            sub={tn("maxScoopsSub", c.maxScoops)}
             available={c.available}
             onToggle={(v) => toggle("containers", c.id, v)}
             onEdit={() => setEditing({ kind: "containers", id: c.id, name: c.name, containerKind: c.kind, maxScoops: c.maxScoops, available: c.available })}
@@ -251,8 +260,8 @@ export default function Carte() {
         ))}
       </Section>
 
-      <button className="btn-ghost mx-auto flex" onClick={() => restore.mutate()} disabled={restore.isPending}>
-        <RotateCcw size={16} /> Remettre les parfums classiques
+      <button className="btn-ghost mx-auto flex" onClick={() => restore.mutate({ lang })} disabled={restore.isPending}>
+        <RotateCcw size={16} /> {t("restoreClassics")}
       </button>
 
       <EditSheet editing={editing} setEditing={setEditing} onDone={refresh} />

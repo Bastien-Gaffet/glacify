@@ -1,5 +1,5 @@
-import { ErrorMessages } from "@contracts/constants";
-import { initTRPC, TRPCError } from "@trpc/server";
+import { initTRPC } from "@trpc/server";
+import { fail } from "./lib/fail";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
 
@@ -10,7 +10,7 @@ export const publicQuery = t.procedure;
 
 const requireAuth = t.middleware(async ({ ctx, next }) => {
   if (!ctx.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: ErrorMessages.unauthenticated });
+    fail("UNAUTHORIZED", "unauthenticated");
   }
   return next({ ctx: { ...ctx, user: ctx.user } });
 });

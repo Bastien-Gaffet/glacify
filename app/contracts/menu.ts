@@ -26,33 +26,36 @@ export type Container = {
 
 export type Menu = { flavors: Flavor[]; toppings: Topping[]; containers: Container[] };
 
-export const DEFAULT_FLAVORS: { name: string; color: string }[] = [
-  { name: "Vanille", color: "#F2E3B3" },
-  { name: "Chocolat", color: "#6B3F2A" },
-  { name: "Fraise", color: "#F29BB0" },
-  { name: "Pistache", color: "#A9CF8A" },
-  { name: "Caramel beurre salé", color: "#D49A5B" },
-  { name: "Citron", color: "#F5E06A" },
-  { name: "Menthe chocolat", color: "#9FE0C8" },
-  { name: "Mangue", color: "#FFB547" },
-  { name: "Framboise", color: "#D9416A" },
-  { name: "Café", color: "#9C6B4E" },
-  { name: "Noix de coco", color: "#F3F0EA" },
-  { name: "Stracciatella", color: "#E8E0D2" },
+/** Languages the classic carte is written in (the app's languages) */
+export type MenuLang = "fr" | "en";
+
+export const DEFAULT_FLAVORS: { fr: string; en: string; color: string }[] = [
+  { fr: "Vanille", en: "Vanilla", color: "#F2E3B3" },
+  { fr: "Chocolat", en: "Chocolate", color: "#6B3F2A" },
+  { fr: "Fraise", en: "Strawberry", color: "#F29BB0" },
+  { fr: "Pistache", en: "Pistachio", color: "#A9CF8A" },
+  { fr: "Caramel beurre salé", en: "Salted caramel", color: "#D49A5B" },
+  { fr: "Citron", en: "Lemon", color: "#F5E06A" },
+  { fr: "Menthe chocolat", en: "Mint chocolate chip", color: "#9FE0C8" },
+  { fr: "Mangue", en: "Mango", color: "#FFB547" },
+  { fr: "Framboise", en: "Raspberry", color: "#D9416A" },
+  { fr: "Café", en: "Coffee", color: "#9C6B4E" },
+  { fr: "Noix de coco", en: "Coconut", color: "#F3F0EA" },
+  { fr: "Stracciatella", en: "Stracciatella", color: "#E8E0D2" },
 ];
 
-export const DEFAULT_TOPPINGS = [
-  "Chantilly",
-  "Coulis chocolat",
-  "Coulis fruits rouges",
-  "Amandes grillées",
-  "Vermicelles",
-  "Gaufrette",
+export const DEFAULT_TOPPINGS: { fr: string; en: string }[] = [
+  { fr: "Chantilly", en: "Whipped cream" },
+  { fr: "Coulis chocolat", en: "Chocolate sauce" },
+  { fr: "Coulis fruits rouges", en: "Berry coulis" },
+  { fr: "Amandes grillées", en: "Toasted almonds" },
+  { fr: "Vermicelles", en: "Sprinkles" },
+  { fr: "Gaufrette", en: "Wafer" },
 ];
 
-export const DEFAULT_CONTAINERS: { name: string; kind: ContainerKind; maxScoops: number }[] = [
-  { name: "Cornet", kind: "cone", maxScoops: 3 },
-  { name: "Pot", kind: "cup", maxScoops: 4 },
+export const DEFAULT_CONTAINERS: { fr: string; en: string; kind: ContainerKind; maxScoops: number }[] = [
+  { fr: "Cornet", en: "Cone", kind: "cone", maxScoops: 3 },
+  { fr: "Pot", en: "Cup", kind: "cup", maxScoops: 4 },
 ];
 
 /** Picker swatches for new flavors. */

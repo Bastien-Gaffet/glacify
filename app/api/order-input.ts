@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { TRPCError } from "@trpc/server";
 import { MAX_SCOOPS, type Menu } from "@contracts/menu";
 import { orderProblem, type OrderInput } from "@contracts/orders";
+import { fail } from "./lib/fail";
 
 export const orderInput = z.object({
   name: z.string().trim().min(1).max(40),
@@ -13,5 +13,5 @@ export const orderInput = z.object({
 
 export function assertValidOrder(menu: Menu, order: OrderInput, guest: boolean) {
   const problem = orderProblem(menu, order, { guest });
-  if (problem) throw new TRPCError({ code: "BAD_REQUEST", message: problem });
+  if (problem) fail("BAD_REQUEST", problem);
 }

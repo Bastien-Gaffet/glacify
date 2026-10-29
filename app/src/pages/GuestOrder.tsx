@@ -8,6 +8,7 @@ import { confirmDialog } from "@/components/Confirm";
 import { OrderForm, draftToInput, emptyDraft, toDraft, type Draft } from "@/components/OrderForm";
 import { describeOrder, lookup } from "@/lib/format";
 import { showError } from "@/lib/errors";
+import { LANGS, useI18n } from "@/lib/i18n";
 
 /** The guest's secret for this round (lets them change their own orders), kept by the browser. */
 const tokenKey = (code: string) => `glacify.guest.${code.toUpperCase()}`;
@@ -29,11 +30,30 @@ const write = (k: string, v: string) => {
 
 type Composing = { id?: number; draft: Draft } | null;
 
+/** The logo, and the language switch for guests whose phone speaks the other one */
 function Brand() {
+  const { lang, setLang } = useI18n();
   return (
-    <Link to="/" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted">
-      <img src="/mark.svg" alt="" className="h-6 w-6" /> Glacify
-    </Link>
+    <div className="flex items-center justify-between">
+      <Link to="/" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted">
+        <img src="/mark.svg" alt="" className="h-6 w-6" /> Glacify
+      </Link>
+      <div className="flex rounded-full bg-surface p-0.5 text-[12px] font-semibold" role="radiogroup" aria-label="Langue / Language">
+        {LANGS.map((l) => (
+          <button
+            key={l.code}
+            type="button"
+            role="radio"
+            aria-checked={l.code === lang}
+            aria-label={l.name}
+            onClick={() => setLang(l.code)}
+            className={`rounded-full px-2.5 py-1 uppercase transition ${l.code === lang ? "bg-canvas text-ink shadow-soft" : "text-muted"}`}
+          >
+            {l.code}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -42,6 +62,7 @@ function Brand() {
  * cream on their own phone, no account. The host sees it arrive live.
  */
 export default function GuestOrder() {
+  const { t, tn } = useI18n();
   const code = (useParams().code ?? "").toUpperCase();
   const [token, setToken] = useState(() => read(tokenKey(code)));
   const [composing, setComposing] = useState<Composing>(null);
@@ -63,7 +84,7 @@ export default function GuestOrder() {
     onError: showError,
   });
   const update = trpc.guest.updateOrder.useMutation({
-    onSuccess: () => (setComposing(null), refresh(), toast.success("Commande modifiée")),
+    onSuccess: () => (setComposing(null), refresh(), toast.success(t("orderUpdated"))),
     onError: showError,
   });
   const cancel = trpc.guest.cancelOrder.useMutation({ onSuccess: refresh, onError: showError });
@@ -73,8 +94,8 @@ export default function GuestOrder() {
     return (
       <div className="mx-auto flex min-h-[100svh] max-w-md flex-col items-center justify-center px-6 text-center">
         <IceCream kind="cup" colors={[]} size={64} />
-        <h1 className="mt-6 font-display text-2xl font-bold">Lien introuvable</h1>
-        <p className="mt-2 text-muted">Ce lien de commande n'existe pas ou plus. Demandez-en un nouveau à la personne qui sert les glaces.</p>
+        <h1 className="mt-6 font-display text-2xl font-bold">{t("linkNotFoundTitle")}</h1>
+        <p className="mt-2 text-muted">{t("linkNotFoundText")}</p>
       </div>
     );
   }
@@ -88,7 +109,7 @@ export default function GuestOrder() {
 
   const submit = () => {
     const input = draftToInput(draft, "");
-    if (!input.name) return toast.error("Indiquez un prénom");
+    if (!input.name) return toast.error(t("enterName"));
     if (mine.length === 0) write(NAME_KEY, input.name);
     if (composing?.id && token) update.mutate({ code, token, id: composing.id, order: input });
     else place.mutate({ code, token, order: input });
@@ -98,20 +119,20 @@ export default function GuestOrder() {
     <div className="mx-auto max-w-lg px-5 pb-[calc(110px+var(--safe-bottom))] pt-6">
       <div className="page-in">
         <Brand />
-        <p className="eyebrow mb-1.5 mt-6">{data.hostName} vous sert des glaces</p>
+        <p className="eyebrow mb-1.5 mt-6">{t("hostServes", { name: data.hostName })}</p>
         <h1 className="title">{data.title}</h1>
       </div>
 
       {!data.open && (
         <div className="card mt-6 p-5">
-          <p className="font-semibold">Les commandes sont fermées</p>
-          <p className="mt-1 text-sm text-muted">Pour une glace de plus, voyez directement avec {data.hostName}.</p>
+          <p className="font-semibold">{t("ordersClosed")}</p>
+          <p className="mt-1 text-sm text-muted">{t("ordersClosedText", { name: data.hostName })}</p>
         </div>
       )}
 
       {mine.length > 0 && !composing && (
         <section className="mt-7 space-y-2.5">
-          <h2 className="eyebrow px-1">{mine.length > 1 ? "Vos glaces" : "Votre glace"}</h2>
+          <h2 className="eyebrow px-1">{tn("yourIce", mine.length)}</h2>
           {mine.map((o) => {
             const served = !!o.servedAt;
             return (
@@ -125,16 +146,16 @@ export default function GuestOrder() {
                   <p className={`mt-1.5 flex items-center gap-1 text-sm font-semibold ${served ? "text-pistache" : "text-ink"}`}>
                     {served ? (
                       <>
-                        <Check size={16} strokeWidth={3} /> Servie, bonne dégustation
+                        <Check size={16} strokeWidth={3} /> {t("servedEnjoy")}
                       </>
                     ) : (
-                      "Commande reçue"
+                      t("orderReceived")
                     )}
                   </p>
                 </div>
                 {data.open && !served && (
                   <div className="flex flex-none flex-col">
-                    <button className="icon-btn h-10 w-10" aria-label="Modifier" onClick={() => {
+                    <button className="icon-btn h-10 w-10" aria-label={t("edit")} onClick={() => {
                         refresh();
                         setComposing({ id: o.id, draft: toDraft(o) });
                       }}>
@@ -142,9 +163,9 @@ export default function GuestOrder() {
                     </button>
                     <button
                       className="icon-btn h-10 w-10 hover:text-danger"
-                      aria-label="Annuler cette glace"
+                      aria-label={t("cancelThisIce")}
                       onClick={async () => {
-                        if (token && (await confirmDialog({ title: "Annuler cette glace ?", confirmLabel: "Annuler la glace", danger: true })))
+                        if (token && (await confirmDialog({ title: t("cancelIceConfirm"), confirmLabel: t("cancelIceOk"), danger: true })))
                           cancel.mutate({ code, token, id: o.id });
                       }}
                     >
@@ -161,7 +182,7 @@ export default function GuestOrder() {
                 refresh();
                 setComposing({ draft: emptyDraft(menu) });
               }}>
-              <Plus size={18} /> Ajouter une autre glace
+              <Plus size={18} /> {t("addAnother")}
             </button>
           )}
         </section>
@@ -170,20 +191,20 @@ export default function GuestOrder() {
       {showForm && (
         <section className="page-in mt-7">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-display text-[22px] font-bold">{composing?.id ? "Modifier la glace" : "Choisissez votre glace"}</h2>
+            <h2 className="font-display text-[22px] font-bold">{composing?.id ? t("editIce") : t("chooseIce")}</h2>
             {composing && mine.length > 0 && (
               <button className="text-sm font-semibold text-muted hover:text-ink" onClick={() => setComposing(null)}>
-                Annuler
+                {t("cancel")}
               </button>
             )}
           </div>
-          <OrderForm menu={menu} draft={draft} onChange={setDraft} guest nameLabel={mine.length === 0 ? "Votre prénom" : "Pour qui ?"} />
+          <OrderForm menu={menu} draft={draft} onChange={setDraft} guest nameLabel={mine.length === 0 ? t("yourFirstName") : t("forWhom")} />
         </section>
       )}
 
       {others.length > 0 && !composing && (
         <section className="mt-8">
-          <h2 className="eyebrow mb-2.5 px-1">Ont déjà commandé</h2>
+          <h2 className="eyebrow mb-2.5 px-1">{t("alreadyOrdered")}</h2>
           <div className="flex flex-wrap gap-2">
             {others.map((o) => (
               <span key={o.id} className={`chip py-2 text-[14px] ${o.served ? "bg-pistache/15 text-pistache" : "bg-surface"}`}>
@@ -199,7 +220,7 @@ export default function GuestOrder() {
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-canvas/95 pb-[max(1rem,var(--safe-bottom))] pt-3 backdrop-blur">
           <div className="mx-auto max-w-lg px-5">
             <button className="btn-ink w-full py-4 text-base" disabled={draft.scoops.length === 0 || place.isPending || update.isPending} onClick={submit}>
-              {composing?.id ? "Enregistrer" : draft.scoops.length === 0 ? "Choisissez au moins un parfum" : "Envoyer ma commande"}
+              {composing?.id ? t("save") : draft.scoops.length === 0 ? t("chooseFlavorFirst") : t("sendOrder")}
             </button>
           </div>
         </div>

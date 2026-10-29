@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { KeyRound, LogOut, MonitorSmartphone, PencilLine, Sparkles, UserPlus } from "lucide-react";
+import { Check, KeyRound, Languages, LogOut, MonitorSmartphone, PencilLine, Sparkles, UserPlus } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/PageHeader";
@@ -10,10 +10,12 @@ import { confirmDialog } from "@/components/Confirm";
 import { FREE_LIMITS } from "@contracts/plans";
 import { initials } from "@/lib/format";
 import { showError } from "@/lib/errors";
+import { LANGS, useI18n } from "@/lib/i18n";
 
-type Open = null | "name" | "account" | "password";
+type Open = null | "name" | "account" | "password" | "lang";
 
 export default function Me() {
+  const { t, lang, setLang } = useI18n();
   const { user, logout } = useAuth();
   const [open, setOpen] = useState<Open>(null);
   const [name, setName] = useState("");
@@ -28,10 +30,10 @@ export default function Me() {
     setNewPassword("");
     toast.success(msg);
   };
-  const updateProfile = trpc.auth.updateProfile.useMutation({ onSuccess: done("Prénom enregistré"), onError: showError });
-  const register = trpc.auth.register.useMutation({ onSuccess: done("Compte créé"), onError: showError });
-  const changePassword = trpc.auth.changePassword.useMutation({ onSuccess: done("Mot de passe changé"), onError: showError });
-  const everywhere = trpc.auth.logoutEverywhere.useMutation({ onSuccess: done("Les autres appareils sont déconnectés"), onError: showError });
+  const updateProfile = trpc.auth.updateProfile.useMutation({ onSuccess: done(t("nameSaved")), onError: showError });
+  const register = trpc.auth.register.useMutation({ onSuccess: done(t("accountCreated")), onError: showError });
+  const changePassword = trpc.auth.changePassword.useMutation({ onSuccess: done(t("passwordChanged")), onError: showError });
+  const everywhere = trpc.auth.logoutEverywhere.useMutation({ onSuccess: done(t("othersSignedOut")), onError: showError });
   if (!user) return null;
 
   const openSheet = (o: Open) => {
@@ -42,13 +44,13 @@ export default function Me() {
 
   return (
     <div className="page-in space-y-7">
-      <PageHeader title="Moi" />
+      <PageHeader title={t("navMe")} />
 
       <div className="flex items-center gap-4">
         <span className="flex h-16 w-16 flex-none items-center justify-center rounded-full bg-ink font-display text-2xl font-bold text-onink">{initials(user.name)}</span>
         <div className="min-w-0">
           <p className="truncate font-display text-[22px] font-bold">{user.name}</p>
-          <p className="truncate text-sm text-muted">{user.anonymous ? "Sans compte, sur cet appareil" : user.email}</p>
+          <p className="truncate text-sm text-muted">{user.anonymous ? t("noAccountDevice") : user.email}</p>
         </div>
       </div>
 
@@ -57,38 +59,40 @@ export default function Me() {
         <div className="rounded-[28px] bg-ink p-5 text-onink">
           <div className="flex items-center gap-2">
             <Sparkles size={18} />
-            <p className="font-display text-lg font-bold">{user.premium ? "Premium" : "Version gratuite"}</p>
+            <p className="font-display text-lg font-bold">{user.premium ? t("planPremium") : t("planFree")}</p>
           </div>
           <p className="mt-1 text-sm text-onink/70">
-            {user.premium
-              ? "Tournées et glaces illimitées."
-              : `${FREE_LIMITS.openRounds} tournée ouverte à la fois, ${FREE_LIMITS.ordersPerRound} glaces par tournée.`}
+            {user.premium ? t("premiumText") : t("freeText", { rounds: FREE_LIMITS.openRounds, orders: FREE_LIMITS.ordersPerRound })}
           </p>
         </div>
       )}
 
       {user.anonymous && (
         <div className="card p-5">
-          <p className="font-semibold">Gardez votre carte et vos tournées</p>
-          <p className="mt-1 text-sm text-muted">Sans compte, tout est lié à cet appareil. Un compte les retrouve partout, sans rien perdre.</p>
+          <p className="font-semibold">{t("keepTitle")}</p>
+          <p className="mt-1 text-sm text-muted">{t("keepText")}</p>
           <button className="btn-ink mt-4 w-full" onClick={() => openSheet("account")}>
-            <UserPlus size={17} /> Créer un compte
+            <UserPlus size={17} /> {t("createAccount")}
           </button>
         </div>
       )}
 
-      <MenuGroup title="Profil">
-        <MenuRow icon={PencilLine} label="Prénom" value={user.name} onClick={() => openSheet("name")} />
+      <MenuGroup title={t("profile")}>
+        <MenuRow icon={PencilLine} label={t("firstName")} value={user.name} onClick={() => openSheet("name")} />
+      </MenuGroup>
+
+      <MenuGroup title={t("preferences")}>
+        <MenuRow icon={Languages} label={t("language")} value={LANGS.find((l) => l.code === lang)!.name} onClick={() => setOpen("lang")} />
       </MenuGroup>
 
       {!user.anonymous && (
-        <MenuGroup title="Compte et sécurité">
-          <MenuRow icon={KeyRound} label="Changer le mot de passe" onClick={() => openSheet("password")} />
+        <MenuGroup title={t("accountSecurity")}>
+          <MenuRow icon={KeyRound} label={t("changePassword")} onClick={() => openSheet("password")} />
           <MenuRow
             icon={MonitorSmartphone}
-            label="Déconnecter les autres appareils"
+            label={t("logoutOthers")}
             onClick={async () => {
-              if (await confirmDialog({ title: "Déconnecter les autres appareils ?", message: "Cet appareil reste connecté.", confirmLabel: "Déconnecter" }))
+              if (await confirmDialog({ title: t("logoutOthersConfirm"), message: t("logoutOthersMsg"), confirmLabel: t("logoutOthersOk") }))
                 everywhere.mutate();
             }}
           />
@@ -98,18 +102,18 @@ export default function Me() {
       <MenuGroup>
         <MenuRow
           icon={LogOut}
-          label={user.anonymous ? "Quitter cette session" : "Se déconnecter"}
+          label={user.anonymous ? t("leaveSession") : t("signOut")}
           danger
           onClick={async () => {
             const ok = await confirmDialog(
               user.anonymous
                 ? {
-                    title: "Quitter sans compte ?",
-                    message: "Sans compte, vous ne pourrez plus retrouver votre carte ni vos tournées.",
-                    confirmLabel: "Quitter",
+                    title: t("leaveTitle"),
+                    message: t("leaveMsg"),
+                    confirmLabel: t("leave"),
                     danger: true,
                   }
-                : { title: "Se déconnecter ?", confirmLabel: "Se déconnecter" },
+                : { title: t("signOutTitle"), confirmLabel: t("signOut") },
             );
             if (ok) logout();
           }}
@@ -121,50 +125,50 @@ export default function Me() {
       <Sheet
         open={open === "name"}
         onClose={() => setOpen(null)}
-        title="Votre prénom"
+        title={t("yourFirstName")}
         footer={
           <button className="btn-ink w-full py-4" disabled={!name.trim() || updateProfile.isPending} onClick={() => updateProfile.mutate({ name: name.trim() })}>
-            Enregistrer
+            {t("save")}
           </button>
         }
       >
-        <p className="mb-3 text-sm text-muted">Vos invités le voient sur le lien de commande.</p>
+        <p className="mb-3 text-sm text-muted">{t("nameSeenByGuests")}</p>
         <input className="field" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} autoFocus />
       </Sheet>
 
       <Sheet
         open={open === "account"}
         onClose={() => setOpen(null)}
-        title="Créer un compte"
+        title={t("createAccount")}
         footer={
           <button
             className="btn-ink w-full py-4"
             disabled={!name.trim() || !email || password.length < 8 || register.isPending}
-            onClick={() => register.mutate({ name: name.trim(), email, password })}
+            onClick={() => register.mutate({ name: name.trim(), email, password, lang })}
           >
-            Créer mon compte
+            {t("createMyAccount")}
           </button>
         }
       >
         <div className="space-y-3">
           <div>
             <label className="label" htmlFor="acc-name">
-              Prénom
+              {t("firstName")}
             </label>
             <input id="acc-name" className="field" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} autoComplete="given-name" />
           </div>
           <div>
             <label className="label" htmlFor="acc-email">
-              E-mail
+              {t("email")}
             </label>
             <input id="acc-email" className="field" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
           </div>
           <div>
             <label className="label" htmlFor="acc-pw">
-              Mot de passe
+              {t("password")}
             </label>
             <input id="acc-pw" className="field" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
-            <p className="mt-1.5 text-xs text-muted">8 caractères minimum.</p>
+            <p className="mt-1.5 text-xs text-muted">{t("passwordHint")}</p>
           </div>
         </div>
       </Sheet>
@@ -172,32 +176,49 @@ export default function Me() {
       <Sheet
         open={open === "password"}
         onClose={() => setOpen(null)}
-        title="Changer le mot de passe"
+        title={t("changePassword")}
         footer={
           <button
             className="btn-ink w-full py-4"
             disabled={!password || newPassword.length < 8 || changePassword.isPending}
             onClick={() => changePassword.mutate({ currentPassword: password, newPassword })}
           >
-            Enregistrer
+            {t("save")}
           </button>
         }
       >
         <div className="space-y-3">
           <div>
             <label className="label" htmlFor="pw-current">
-              Mot de passe actuel
+              {t("currentPassword")}
             </label>
             <input id="pw-current" className="field" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
           </div>
           <div>
             <label className="label" htmlFor="pw-new">
-              Nouveau mot de passe
+              {t("newPassword")}
             </label>
             <input id="pw-new" className="field" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" />
-            <p className="mt-1.5 text-xs text-muted">8 caractères minimum. Les autres appareils seront déconnectés.</p>
+            <p className="mt-1.5 text-xs text-muted">{t("newPasswordHint")}</p>
           </div>
         </div>
+      </Sheet>
+
+      <Sheet open={open === "lang"} onClose={() => setOpen(null)} title={t("language")}>
+        <MenuGroup>
+          {LANGS.map((l) => (
+            <button
+              key={l.code}
+              type="button"
+              onClick={() => (setLang(l.code), setOpen(null))}
+              className="flex min-h-[60px] w-full items-center gap-3 px-4 text-left font-medium transition hover:bg-sunken/60"
+              aria-pressed={l.code === lang}
+            >
+              <span className="flex-1">{l.name}</span>
+              {l.code === lang && <Check size={19} className="text-pistache" strokeWidth={2.6} />}
+            </button>
+          ))}
+        </MenuGroup>
       </Sheet>
     </div>
   );

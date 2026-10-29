@@ -7,6 +7,7 @@ import { clsx } from "clsx";
 import { buildPlan } from "@contracts/plan";
 import { IceCream } from "@/components/IceCream";
 import { describeOrder, lookup, plural } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 import { groupLabel, serviceSteps, stepDone, tileDone, type ServiceStep } from "./serviceSteps";
 import type { ServiceState } from "./useServiceState";
 import type { RoundData, RoundOrder } from "./types";
@@ -149,9 +150,11 @@ export function ServiceMode({
   onExit: () => void;
   onCloseRound: () => void;
 }) {
+  // `t` names the tiles here: the translator is `L`
+  const L = useI18n();
   const { menu, round } = data;
   const l = lookup(menu);
-  const plan = buildPlan(data.orders, menu);
+  const plan = buildPlan(data.orders, menu, L.t("removedFlavor"));
   const steps = serviceSteps(plan);
   const isDone = (s: ServiceStep) => stepDone(s, state, plan);
   const firstUndone = () => {
@@ -209,7 +212,7 @@ export function ServiceMode({
     for (const o of data.orders) {
       if (seen.current.has(o.id)) continue;
       seen.current.add(o.id);
-      toast(`${o.name} vient de commander`, { description: describeOrder(menu, o) });
+      toast(L.t("justOrdered", { name: o.name }), { description: describeOrder(menu, o) });
     }
   }, [data.orders, menu]);
 
@@ -239,25 +242,25 @@ export function ServiceMode({
         </div>
         {left === 0 ? (
           <>
-            <h2 className="title">Bonne dégustation</h2>
-            <p className="mt-2 text-[15px] text-muted">Toutes les glaces sont servies.</p>
+            <h2 className="title">{L.t("enjoy")}</h2>
+            <p className="mt-2 text-[15px] text-muted">{L.t("allIcesServed")}</p>
             <div className="mt-8 flex w-full max-w-xs flex-col gap-2.5">
               {round.status === "open" && (
                 <button className="btn-ink" onClick={onCloseRound}>
-                  Fermer la tournée
+                  {L.t("closeRound")}
                 </button>
               )}
               <button className="btn-soft" onClick={onExit}>
-                Voir le récapitulatif
+                {L.t("seeRecap")}
               </button>
             </div>
           </>
         ) : (
           <>
-            <h2 className="title">Presque fini</h2>
-            <p className="mt-2 text-[15px] text-muted">Il reste {plural(left, "étape")} à faire.</p>
+            <h2 className="title">{L.t("almostDone")}</h2>
+            <p className="mt-2 text-[15px] text-muted">{L.tn("stepsLeft", left)}</p>
             <button className="btn-ink mt-8" onClick={() => go(firstUndone(), -1)}>
-              Y retourner
+              {L.t("goBack")}
             </button>
           </>
         )}
@@ -267,7 +270,7 @@ export function ServiceMode({
     const total = step.items.reduce((n, i) => n + i.count, 0);
     content = (
       <>
-        <Heading eyebrow="Pour commencer" title="Sortez les contenants" sub={`${plural(total, "glace")} à préparer`} />
+        <Heading eyebrow={L.t("firstStep")} title={L.t("getOut")} sub={L.tn("icesToMake", total)} />
         <div className="grid grid-cols-2 gap-3">
           {step.items.map((i) => {
             const done = state.checks.has(i.key);
@@ -280,7 +283,7 @@ export function ServiceMode({
               >
                 <IceCream kind={i.container.kind} colors={[]} size={46} />
                 <span className="tabular font-display text-[34px] font-bold leading-none">{i.count}</span>
-                <span className="text-sm font-medium text-muted">{i.count > 1 ? `${i.container.name.toLowerCase()}s` : i.container.name.toLowerCase()}</span>
+                <span className="text-sm font-medium text-muted">{plural(i.count, i.container.name.toLowerCase()).replace(/^\d+ /, "")}</span>
               </Tile>
             );
           })}
@@ -288,7 +291,7 @@ export function ServiceMode({
       </>
     );
     primary = {
-      label: "C'est prêt",
+      label: L.t("ready"),
       onClick: () => {
         state.setChecks(
           step.items.map((i) => i.key),
@@ -314,14 +317,14 @@ export function ServiceMode({
       }
       const last = step.tiles.every((x) => x === t || state.checks.has(x.key));
       state.setChecks(last ? [t.key, step.key] : [t.key], true);
-      if (last) celebrate(tub.flavor.color, "Au congélateur !");
+      if (last) celebrate(tub.flavor.color, L.t("toFreezer"));
     };
     content = (
       <>
         <Heading
-          eyebrow={`Bac ${step.index + 1} sur ${plan.tubs.length}`}
+          eyebrow={L.t("tubOf", { i: step.index + 1, n: plan.tubs.length })}
           title={tub.flavor.name}
-          sub={`${plural(tub.scoops, "boule")} · ${placed} posée${placed > 1 ? "s" : ""}`}
+          sub={`${L.tn("scoops", tub.scoops)} · ${L.tn("placed", placed)}`}
           lead={
             <motion.span
               key={tub.flavorId}
@@ -334,7 +337,7 @@ export function ServiceMode({
           }
         />
         <p className="-mt-3 mb-5 text-[15px]">
-          Ouvrez le bac, touchez chaque glace quand sa boule est posée.
+          {L.t("openTub")}
         </p>
         <div className="space-y-6">
           {tub.groups.map((g, gi) => (
@@ -345,7 +348,7 @@ export function ServiceMode({
                   const t = step.tiles.find((x) => x.order.id === order.id)!;
                   const done = tileDone(state, step.key, t.key);
                   return (
-                    <Tile key={t.key} done={done} onTap={() => tap(t)} label={`${order.name}${count > 1 ? `, ${count} boules` : ""}`}>
+                    <Tile key={t.key} done={done} onTap={() => tap(t)} label={count > 1 ? `${order.name}, ${L.tn("scoops", count)}` : order.name}>
                       <IceCream
                         kind={l.container(order.containerId).kind}
                         colors={tubColors(order, step.index, done)}
@@ -353,7 +356,7 @@ export function ServiceMode({
                         animateLast={done}
                       />
                       <span className="w-full truncate text-[15px] font-semibold">{order.name}</span>
-                      {count > 1 && <span className="-mt-1 text-[12px] font-semibold text-accent">{count} boules</span>}
+                      {count > 1 && <span className="-mt-1 text-[12px] font-semibold text-accent">{L.tn("scoops", count)}</span>}
                     </Tile>
                   );
                 })}
@@ -364,18 +367,18 @@ export function ServiceMode({
       </>
     );
     primary = isDone(step)
-      ? { label: "Bac suivant", onClick: next }
+      ? { label: L.t("nextTub"), onClick: next }
       : {
-          label: "Au congélateur !",
+          label: L.t("toFreezer"),
           onClick: () => {
             state.setChecks([step.key, ...step.tiles.map((t) => t.key)], true);
-            celebrate(tub.flavor.color, "Au congélateur !");
+            celebrate(tub.flavor.color, L.t("toFreezer"));
           },
         };
   } else if (step.kind === "toppings") {
     content = (
       <>
-        <Heading eyebrow="La touche finale" title="Les suppléments" sub="Touchez chaque glace une fois garnie." />
+        <Heading eyebrow={L.t("finishingTouch")} title={L.t("theToppings")} sub={L.t("tapWhenTopped")} />
         <div className="space-y-6">
           {step.groups.map((g) => (
             <section key={g.key}>
@@ -412,7 +415,7 @@ export function ServiceMode({
       </>
     );
     primary = {
-      label: "Suppléments posés",
+      label: L.t("toppingsDone"),
       onClick: () => {
         state.setChecks(
           step.groups.flatMap((g) => [g.key, ...g.tiles.map((t) => t.key)]),
@@ -428,9 +431,9 @@ export function ServiceMode({
     content = (
       <>
         <Heading
-          eyebrow="Dernière étape"
-          title="Servez"
-          sub={waiting ? `Touchez une glace quand vous la donnez. Encore ${waiting}.` : "Tout le monde est servi."}
+          eyebrow={L.t("lastStep")}
+          title={L.t("serveTitle")}
+          sub={waiting ? L.t("tapWhenGiven", { n: waiting }) : L.t("everyoneServedDot")}
         />
         <div className="grid grid-cols-2 gap-2.5">
           {ordered.map((o) => {
@@ -451,14 +454,14 @@ export function ServiceMode({
                 <span className="w-full truncate text-[16px] font-semibold">{o.name}</span>
                 <span className="line-clamp-2 text-[12px] leading-snug text-muted">{describeOrder(menu, o)}</span>
                 {o.note && <span className="line-clamp-2 text-[12px] italic text-ink/80">« {o.note} »</span>}
-                {served && <span className="text-[12px] font-semibold text-pistache">Servie</span>}
+                {served && <span className="text-[12px] font-semibold text-pistache">{L.t("servedTile")}</span>}
               </Tile>
             );
           })}
         </div>
       </>
     );
-    primary = waiting ? { label: `Encore ${waiting} à servir` } : { label: "Terminer", onClick: next };
+    primary = waiting ? { label: L.t("stillToServe", { n: waiting }) } : { label: L.t("finish"), onClick: next };
   }
 
   // On the body: the page's entrance animation would otherwise trap this
@@ -470,10 +473,10 @@ export function ServiceMode({
         style={{ paddingTop: "var(--safe-top)", paddingBottom: "var(--safe-bottom)" }}
         role="dialog"
         aria-modal="true"
-        aria-label="Service"
+        aria-label={L.t("serviceTab")}
       >
         <header className="flex items-center gap-3 px-3 pt-2">
-          <button className="icon-btn text-ink" onClick={onExit} aria-label="Quitter le service">
+          <button className="icon-btn text-ink" onClick={onExit} aria-label={L.t("quitService")}>
             <X size={22} />
           </button>
           <div className="flex flex-1 gap-1" aria-hidden="true">
@@ -519,7 +522,7 @@ export function ServiceMode({
 
         {step && (
           <footer className="flex items-center gap-2 border-t border-line/70 px-3 py-3">
-            <button className="icon-btn text-ink disabled:opacity-30" onClick={() => go(index - 1, -1)} disabled={index === 0} aria-label="Étape précédente">
+            <button className="icon-btn text-ink disabled:opacity-30" onClick={() => go(index - 1, -1)} disabled={index === 0} aria-label={L.t("prevStep")}>
               <ChevronLeft size={24} />
             </button>
             {primary && (
@@ -527,7 +530,7 @@ export function ServiceMode({
                 {primary.label}
               </button>
             )}
-            <button className="icon-btn text-ink" onClick={() => go(index + 1, 1)} aria-label="Étape suivante">
+            <button className="icon-btn text-ink" onClick={() => go(index + 1, 1)} aria-label={L.t("nextStep")}>
               <ChevronRight size={24} />
             </button>
           </footer>

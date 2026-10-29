@@ -4,6 +4,7 @@ import { Sheet } from "@/components/Sheet";
 import { OrderForm, draftToInput, emptyDraft, toDraft, type Draft } from "@/components/OrderForm";
 import { trpc } from "@/providers/trpc";
 import { showError } from "@/lib/errors";
+import { useI18n } from "@/lib/i18n";
 
 export type EditTarget =
   | { mode: "new"; from?: Omit<Draft, "name"> }
@@ -24,6 +25,7 @@ export function OrderSheet({
   count: number;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const [draft, setDraft] = useState<Draft>(() => emptyDraft(menu));
   useEffect(() => {
     if (!target) return;
@@ -45,17 +47,17 @@ export function OrderSheet({
     save.mutate({
       roundId,
       id: editing ? target.order.id : undefined,
-      ...draftToInput(draft, `Glace ${count + 1}`),
+      ...draftToInput(draft, t("iceN", { n: count + 1 })),
     });
 
   return (
     <Sheet
       open={!!target}
       onClose={onClose}
-      title={editing ? "Modifier la glace" : "Nouvelle glace"}
+      title={editing ? t("editIce") : t("newIce")}
       footer={
         <button className="btn-ink w-full py-4" disabled={draft.scoops.length === 0 || save.isPending} onClick={submit}>
-          {editing ? "Enregistrer" : "Ajouter à la commande"}
+          {editing ? t("save") : t("addToOrder")}
         </button>
       }
     >

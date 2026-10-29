@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, LogIn, UserPlus } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { IceCream } from "@/components/IceCream";
 import { showError } from "@/lib/errors";
+import { useI18n } from "@/lib/i18n";
 
 type Mode = "start" | "login" | "register";
 
@@ -12,6 +13,7 @@ type Mode = "start" | "login" | "register";
  * without losing anything.
  */
 export default function Welcome() {
+  const { t, lang } = useI18n();
   const [mode, setMode] = useState<Mode>("start");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -25,9 +27,9 @@ export default function Welcome() {
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (mode === "start") guest.mutate({ name: name.trim() || undefined });
+    if (mode === "start") guest.mutate({ name: name.trim() || undefined, lang });
     else if (mode === "login") login.mutate({ email, password });
-    else register.mutate({ email, password, name });
+    else register.mutate({ email, password, name, lang });
   };
 
   return (
@@ -40,20 +42,20 @@ export default function Welcome() {
         </div>
         <h1 className="mt-8 text-center font-display text-[56px] font-extrabold leading-none tracking-tight">Glacify</h1>
         <p className="mx-auto mt-3 max-w-[300px] text-center text-[17px] leading-snug text-muted">
-          Chacun choisit sa glace, vous servez dans le bon ordre.
+          {t("welcomeTagline")}
         </p>
       </div>
 
       <form key={mode} onSubmit={submit} className="page-in mt-10 space-y-3">
         {mode !== "start" && (
           <button type="button" onClick={() => setMode("start")} className="mb-1 flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink">
-            <ArrowLeft size={16} /> Retour
+            <ArrowLeft size={16} /> {t("back")}
           </button>
         )}
         {mode !== "login" && (
           <div>
             <label className="label" htmlFor="name">
-              {mode === "start" ? "Votre prénom (facultatif)" : "Prénom"}
+              {mode === "start" ? t("welcomeNameOptional") : t("firstName")}
             </label>
             <input id="name" className="field" value={name} onChange={(e) => setName(e.target.value)} required={mode === "register"} maxLength={120} autoComplete="given-name" />
           </div>
@@ -62,13 +64,13 @@ export default function Welcome() {
           <>
             <div>
               <label className="label" htmlFor="email">
-                E-mail
+                {t("email")}
               </label>
               <input id="email" className="field" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
             </div>
             <div>
               <label className="label" htmlFor="password">
-                Mot de passe
+                {t("password")}
               </label>
               <input
                 id="password"
@@ -80,37 +82,37 @@ export default function Welcome() {
                 minLength={mode === "register" ? 8 : 1}
                 autoComplete={mode === "register" ? "new-password" : "current-password"}
               />
-              {mode === "register" && <p className="mt-1.5 text-xs text-muted">8 caractères minimum.</p>}
+              {mode === "register" && <p className="mt-1.5 text-xs text-muted">{t("passwordHint")}</p>}
             </div>
           </>
         )}
         <button type="submit" className="btn-ink w-full py-4 text-base" disabled={busy}>
           {mode === "start" ? (
             <>
-              Commencer <ArrowRight size={18} />
+              {t("start")} <ArrowRight size={18} />
             </>
           ) : mode === "login" ? (
             <>
-              <LogIn size={18} /> Se connecter
+              <LogIn size={18} /> {t("signIn")}
             </>
           ) : (
             <>
-              <UserPlus size={18} /> Créer mon compte
+              <UserPlus size={18} /> {t("createMyAccount")}
             </>
           )}
         </button>
-        {mode === "start" && <p className="text-center text-xs text-muted">Sans compte pour commencer. Vous pourrez en créer un plus tard sans rien perdre.</p>}
+        {mode === "start" && <p className="text-center text-xs text-muted">{t("welcomeNoAccount")}</p>}
       </form>
 
       <div className="mt-6 flex flex-col items-center gap-2.5 text-sm text-muted">
         {mode !== "login" && (
           <button onClick={() => setMode("login")} className="hover:text-ink">
-            J'ai déjà un compte · <span className="font-semibold text-ink">Se connecter</span>
+            {t("haveAccount")} <span className="font-semibold text-ink">{t("signIn")}</span>
           </button>
         )}
         {mode !== "register" && (
           <button onClick={() => setMode("register")} className="hover:text-ink">
-            Créer un compte avec mon e-mail
+            {t("registerWithEmail")}
           </button>
         )}
       </div>

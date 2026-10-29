@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router";
 import { ArrowLeft } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 /** Screen title, with an optional back arrow and actions on the right. */
 export function PageHeader({
@@ -17,12 +18,13 @@ export function PageHeader({
   children?: ReactNode;
 }) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   return (
     <header className="mb-6">
       {(back || actions) && (
         <div className="mb-3 flex items-center justify-between">
           {back ? (
-            <button onClick={() => navigate(back)} className="icon-btn -ml-2.5 text-ink" aria-label="Retour">
+            <button onClick={() => navigate(back)} className="icon-btn -ml-2.5 text-ink" aria-label={t("back")}>
               <ArrowLeft size={22} />
             </button>
           ) : (

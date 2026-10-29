@@ -4,6 +4,7 @@ import { inkOn, type Menu } from "@contracts/menu";
 import { IceCream } from "./IceCream";
 import { Segmented } from "./Segmented";
 import { lookup } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 
 export type Draft = { name: string; containerId: number; scoops: number[]; toppings: number[]; note: string };
 
@@ -37,7 +38,7 @@ export function OrderForm({
   draft,
   onChange,
   guest,
-  nameLabel = "Pour qui ?",
+  nameLabel,
   autoFocusName,
 }: {
   menu: Menu;
@@ -48,6 +49,7 @@ export function OrderForm({
   nameLabel?: string;
   autoFocusName?: boolean;
 }) {
+  const { t, tn } = useI18n();
   const l = lookup(menu);
   const container = l.container(draft.containerId);
   const max = container.maxScoops;
@@ -69,12 +71,12 @@ export function OrderForm({
         <div className="min-w-0 flex-1 space-y-3">
           <div>
             <label className="label" htmlFor="order-name">
-              {nameLabel}
+              {nameLabel ?? t("forWhom")}
             </label>
             <input
               id="order-name"
               className="field"
-              placeholder="Prénom"
+              placeholder={t("firstName")}
               value={draft.name}
               onChange={(e) => set({ name: e.target.value })}
               maxLength={40}
@@ -84,7 +86,7 @@ export function OrderForm({
           </div>
           {containers.length > 1 && (
             <Segmented
-              label="Contenant"
+              label={t("container")}
               value={draft.containerId}
               onChange={(id) => {
                 const next = l.container(id);
@@ -106,14 +108,14 @@ export function OrderForm({
 
       <section>
         <div className="mb-2.5 flex items-baseline justify-between">
-          <h3 className="font-display text-lg font-bold">Parfums</h3>
+          <h3 className="font-display text-lg font-bold">{t("flavors")}</h3>
           <span className={clsx("tabular text-sm", full ? "font-semibold text-ink" : "text-muted")}>
-            {draft.scoops.length}/{max} {max > 1 ? "boules" : "boule"}
+            {draft.scoops.length}/{max} {tn("scoopWord", max)}
           </span>
         </div>
         <div className="mb-3 flex min-h-[36px] flex-wrap items-center gap-1.5">
           {draft.scoops.length === 0 ? (
-            <p className="text-sm text-muted">Touchez un parfum pour ajouter une boule.</p>
+            <p className="text-sm text-muted">{t("tapFlavor")}</p>
           ) : (
             draft.scoops.map((id, i) => {
               const f = l.flavor(id);
@@ -124,7 +126,7 @@ export function OrderForm({
                   onClick={() => set({ scoops: draft.scoops.filter((_, j) => j !== i) })}
                   className="chip"
                   style={{ background: f.color, color: inkOn(f.color) }}
-                  aria-label={`Retirer une boule ${f.name}`}
+                  aria-label={t("removeScoop", { name: f.name })}
                 >
                   {f.name}
                   <X size={14} />
@@ -134,7 +136,7 @@ export function OrderForm({
           )}
         </div>
         {/* The service opens one tub at a time, so the scoops go in tub order */}
-        {draft.scoops.length > 1 && <p className="-mt-1 mb-3 text-[13px] text-muted">L'ordre des boules peut changer au service.</p>}
+        {draft.scoops.length > 1 && <p className="-mt-1 mb-3 text-[13px] text-muted">{t("orderMayChange")}</p>}
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {flavors.map((f) => {
             const n = inDraft.get(f.id);
@@ -159,7 +161,7 @@ export function OrderForm({
                   </span>
                 ) : null}
                 {f.name}
-                {out && <span className="text-[11px] font-medium opacity-80">Épuisé</span>}
+                {out && <span className="text-[11px] font-medium opacity-80">{t("soldOut")}</span>}
               </button>
             );
           })}
@@ -168,7 +170,7 @@ export function OrderForm({
 
       {toppings.length > 0 && (
         <section>
-          <h3 className="mb-2.5 font-display text-lg font-bold">Suppléments</h3>
+          <h3 className="mb-2.5 font-display text-lg font-bold">{t("toppings")}</h3>
           <div className="flex flex-wrap gap-2">
             {toppings.map((t) => {
               const on = draft.toppings.includes(t.id);
@@ -195,12 +197,12 @@ export function OrderForm({
 
       <div>
         <label className="label" htmlFor="order-note">
-          Une précision ? (facultatif)
+          {t("noteLabel")}
         </label>
         <input
           id="order-note"
           className="field"
-          placeholder="Petite boule, sans gluten…"
+          placeholder={t("notePlaceholder")}
           value={draft.note}
           onChange={(e) => set({ note: e.target.value })}
           maxLength={140}

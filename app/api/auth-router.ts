@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { TRPCError } from "@trpc/server";
 import { and, eq, sql } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { users } from "@db/schema";
@@ -10,7 +9,11 @@ import { MINUTE, perIp, rateLimit } from "./lib/rate-limit";
 import { isPremium } from "./lib/entitlements";
 import { env } from "./lib/env";
 import { getDb } from "./queries/connection";
+import { fail } from "./lib/fail";
 import { seedMenu } from "./queries/menu";
+
+/** Language of the classic carte created with a new host */
+const lang = z.enum(["fr", "en"]).default("fr");
 
 const email = z.string().trim().toLowerCase().email().max(320);
 
@@ -32,7 +35,7 @@ export const authRouter = createRouter({
 
   /** Use the app straight away: a real session on this device, no e-mail or password. */
   startGuest: publicQuery
-    .input(z.object({ name: z.string().trim().max(120).optional() }))
+    .input(z.object({ name: z.string().trim().max(120).optional(), lang }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user) return { success: true };
       rateLimit([perIp("guest", ctx.req.headers, 10, 60 * MINUTE)]);
@@ -44,20 +47,20 @@ export const authRouter = createRouter({
           passwordHash: "",
           anonymous: 1,
         });
-      await seedMenu(res.insertId);
+      await seedMenu(res.insertId, input.lang);
       await issueSession(ctx, res.insertId, 0);
       return { success: true };
     }),
 
   /** A new account; from a session without one, the same user (carte and rounds) gets the account. */
   register: publicQuery
-    .input(z.object({ email, password: z.string().min(8).max(128), name: z.string().trim().min(1).max(120) }))
+    .input(z.object({ email, password: z.string().min(8).max(128), name: z.string().trim().min(1).max(120), lang }))
     .mutation(async ({ ctx, input }) => {
-      if (!env.registrationOpen) throw new TRPCError({ code: "FORBIDDEN", message: "Inscriptions fermées" });
+      if (!env.registrationOpen) fail("FORBIDDEN", "registrationClosed");
       rateLimit([perIp("register", ctx.req.headers, 5, 60 * MINUTE)]);
       const db = getDb();
       const existing = await db.select({ id: users.id }).from(users).where(eq(users.email, input.email)).limit(1);
-      if (existing.length) throw new TRPCError({ code: "CONFLICT", message: "Un compte existe déjà avec cet e-mail" });
+      if (existing.length) fail("CONFLICT", "emailTaken");
       const account = { email: input.email, name: input.name, passwordHash: hashPassword(input.password) };
       if (ctx.user?.anonymous) {
         const version = ctx.user.sessionVersion + 1;
@@ -65,12 +68,12 @@ export const authRouter = createRouter({
           .update(users)
           .set({ ...account, anonymous: 0, sessionVersion: version })
           .where(and(eq(users.id, ctx.user.id), eq(users.anonymous, 1)));
-        if (!res.affectedRows) throw new TRPCError({ code: "CONFLICT", message: "Session déjà convertie" });
+        if (!res.affectedRows) fail("CONFLICT", "alreadyConverted");
         await issueSession(ctx, ctx.user.id, version);
         return { success: true };
       }
       const [res] = await db.insert(users).values(account);
-      await seedMenu(res.insertId);
+      await seedMenu(res.insertId, input.lang);
       await issueSession(ctx, res.insertId, 0);
       return { success: true };
     }),
@@ -84,7 +87,7 @@ export const authRouter = createRouter({
       ]);
       const user = (await getDb().select().from(users).where(eq(users.email, input.email)).limit(1))[0];
       if (!user || user.anonymous || !verifyPassword(input.password, user.passwordHash))
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "E-mail ou mot de passe incorrect" });
+        fail("UNAUTHORIZED", "badCredentials");
       await issueSession(ctx, user.id, user.sessionVersion);
       return { success: true };
     }),
@@ -116,7 +119,7 @@ export const authRouter = createRouter({
     .mutation(async ({ ctx, input }) => {
       rateLimit([{ key: `pw:${ctx.user.id}`, limit: 5, windowMs: 15 * MINUTE }]);
       if (!verifyPassword(input.currentPassword, ctx.user.passwordHash))
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "Mot de passe actuel incorrect" });
+        fail("UNAUTHORIZED", "badCurrentPassword");
       await getDb()
         .update(users)
         .set({ passwordHash: hashPassword(input.newPassword), sessionVersion: sql`${users.sessionVersion} + 1` })

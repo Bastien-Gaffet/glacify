@@ -1,5 +1,5 @@
 import { and, asc, eq } from "drizzle-orm";
-import { DEFAULT_CONTAINERS, DEFAULT_FLAVORS, DEFAULT_TOPPINGS, type Menu } from "@contracts/menu";
+import { DEFAULT_CONTAINERS, DEFAULT_FLAVORS, DEFAULT_TOPPINGS, type Menu, type MenuLang } from "@contracts/menu";
 import { containers, flavors, toppings } from "@db/schema";
 import { getDb } from "./connection";
 
@@ -37,28 +37,34 @@ export async function loadMenu(userId: number): Promise<Menu> {
   };
 }
 
-/** A new host starts with a classic carte, ready to serve. */
-export async function seedMenu(userId: number) {
+/** A new host starts with a classic carte, ready to serve, in their language. */
+export async function seedMenu(userId: number, lang: MenuLang) {
   const db = getDb();
-  await db.insert(flavors).values(DEFAULT_FLAVORS.map((f, i) => ({ ...f, userId, position: i })));
-  await db.insert(toppings).values(DEFAULT_TOPPINGS.map((name, i) => ({ name, userId, position: i })));
-  await db.insert(containers).values(DEFAULT_CONTAINERS.map((c, i) => ({ ...c, userId, position: i })));
+  await db.insert(flavors).values(DEFAULT_FLAVORS.map((f, i) => ({ name: f[lang], color: f.color, userId, position: i })));
+  await db.insert(toppings).values(DEFAULT_TOPPINGS.map((t, i) => ({ name: t[lang], userId, position: i })));
+  await db.insert(containers).values(DEFAULT_CONTAINERS.map((c, i) => ({ name: c[lang], kind: c.kind, maxScoops: c.maxScoops, userId, position: i })));
 }
 
-/** Puts back the default items missing from the carte (by name), without touching the others. */
-export async function restoreDefaults(userId: number) {
+/**
+ * Puts back the default items missing from the carte, without touching the
+ * others. An item counts as there under its name in any language, so a host
+ * who switched language gets no duplicates.
+ */
+export async function restoreDefaults(userId: number, lang: MenuLang) {
   const db = getDb();
   const menu = await loadMenu(userId);
   const live = (items: { name: string; archived: boolean }[]) =>
     new Set(items.filter((x) => !x.archived).map((x) => x.name.toLowerCase()));
   const has = { f: live(menu.flavors), t: live(menu.toppings), c: live(menu.containers) };
+  const missing = (set: Set<string>) => (x: { fr: string; en: string }) => !set.has(x.fr.toLowerCase()) && !set.has(x.en.toLowerCase());
   const end = (n: number) => n + 1000;
-  const f = DEFAULT_FLAVORS.filter((x) => !has.f.has(x.name.toLowerCase()));
-  const t = DEFAULT_TOPPINGS.filter((x) => !has.t.has(x.toLowerCase()));
-  const c = DEFAULT_CONTAINERS.filter((x) => !has.c.has(x.name.toLowerCase()));
-  if (f.length) await db.insert(flavors).values(f.map((x, i) => ({ ...x, userId, position: end(i) })));
-  if (t.length) await db.insert(toppings).values(t.map((name, i) => ({ name, userId, position: end(i) })));
-  if (c.length) await db.insert(containers).values(c.map((x, i) => ({ ...x, userId, position: end(i) })));
+  const f = DEFAULT_FLAVORS.filter(missing(has.f));
+  const t = DEFAULT_TOPPINGS.filter(missing(has.t));
+  const c = DEFAULT_CONTAINERS.filter(missing(has.c));
+  if (f.length) await db.insert(flavors).values(f.map((x, i) => ({ name: x[lang], color: x.color, userId, position: end(i) })));
+  if (t.length) await db.insert(toppings).values(t.map((x, i) => ({ name: x[lang], userId, position: end(i) })));
+  if (c.length)
+    await db.insert(containers).values(c.map((x, i) => ({ name: x[lang], kind: x.kind, maxScoops: x.maxScoops, userId, position: end(i) })));
   return f.length + t.length + c.length;
 }
 

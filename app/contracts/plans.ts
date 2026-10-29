@@ -1,3 +1,5 @@
+import type { AppError } from "./errors";
+
 /**
  * Limits of a possible free tier, kept for later. Glacify is free during the
  * beta: they apply only if the server runs with BETA_PREMIUM=false.
@@ -18,10 +20,10 @@ export const HARD_LIMITS = {
   containers: 12,
 } as const;
 
-/** Sent in the tRPC error message when a free limit is hit. */
 export type PlanLimit = "open_rounds" | "orders_per_round";
 
-export const PLAN_LIMIT_MESSAGES: Record<PlanLimit, string> = {
-  open_rounds: "Une seule tournée ouverte à la fois en version gratuite.",
-  orders_per_round: `${FREE_LIMITS.ordersPerRound} glaces par tournée en version gratuite.`,
+/** The error sent when a free limit is hit. */
+export const PLAN_LIMIT_ERRORS: Record<PlanLimit, AppError> = {
+  open_rounds: { code: "plan.openRounds", params: { n: FREE_LIMITS.openRounds } },
+  orders_per_round: { code: "plan.ordersPerRound", params: { n: FREE_LIMITS.ordersPerRound } },
 };

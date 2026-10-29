@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { TRPCError } from "@trpc/server";
 import { and, count, eq, isNull } from "drizzle-orm";
 import { HARD_LIMITS } from "@contracts/plans";
 import { orders } from "@db/schema";
@@ -7,6 +6,7 @@ import { createRouter, publicQuery } from "./middleware";
 import { newGuestToken, normalizeCode } from "./lib/codes";
 import { MINUTE, perIp, rateLimit } from "./lib/rate-limit";
 import { getDb } from "./queries/connection";
+import { fail } from "./lib/fail";
 import { loadMenu } from "./queries/menu";
 import { assertOrderRoom, notFound, orderDto, roundByCode, roundOrders } from "./queries/rounds";
 import { assertValidOrder, orderInput } from "./order-input";
@@ -23,7 +23,7 @@ const token = z.string().regex(/^[0-9a-f]{48}$/);
 async function openRound(c: string) {
   const row = await roundByCode(c);
   if (row.round.status !== "open")
-    throw new TRPCError({ code: "FORBIDDEN", message: "Les commandes sont fermées pour cette tournée" });
+    fail("FORBIDDEN", "round.closed");
   return row;
 }
 
@@ -33,8 +33,8 @@ async function guestOrder(roundId: number, t: string, id: number) {
     .from(orders)
     .where(and(eq(orders.id, id), eq(orders.roundId, roundId), eq(orders.guestToken, t)))
     .limit(1);
-  if (!order) notFound("Commande introuvable");
-  if (order.servedAt) throw new TRPCError({ code: "FORBIDDEN", message: "Cette glace a déjà été servie" });
+  if (!order) notFound("order.notFound");
+  if (order.servedAt) fail("FORBIDDEN", "order.served");
   return order;
 }
 
@@ -69,7 +69,7 @@ export const guestRouter = createRouter({
           .from(orders)
           .where(and(eq(orders.roundId, round.id), eq(orders.guestToken, guestToken)));
         if (n >= HARD_LIMITS.ordersPerGuest)
-          throw new TRPCError({ code: "FORBIDDEN", message: "Vous avez déjà commandé beaucoup de glaces" });
+          fail("FORBIDDEN", "order.tooManyForGuest");
       }
       assertValidOrder(await loadMenu(host.id), input.order, true);
       await assertOrderRoom(host, round.id);

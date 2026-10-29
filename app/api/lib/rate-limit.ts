@@ -1,4 +1,4 @@
-import { TRPCError } from "@trpc/server";
+import { fail } from "./fail";
 
 /**
  * In-memory sliding-window limiter (single process, which is how Glacify runs).
@@ -22,7 +22,7 @@ export function allow(key: string, limit: number, windowMs: number) {
 export function rateLimit(rules: { key: string; limit: number; windowMs: number }[]) {
   for (const r of rules) {
     if (!allow(r.key, r.limit, r.windowMs))
-      throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many attempts" });
+      fail("TOO_MANY_REQUESTS", "tooManyAttempts");
   }
 }
 

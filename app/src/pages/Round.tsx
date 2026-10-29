@@ -9,6 +9,7 @@ import { Sheet } from "@/components/Sheet";
 import { confirmDialog } from "@/components/Confirm";
 import { MenuGroup, MenuRow } from "@/components/menu";
 import { showError } from "@/lib/errors";
+import { useI18n } from "@/lib/i18n";
 import { Orders } from "./round/Orders";
 import { Service } from "./round/Service";
 import { ShareSheet } from "./round/ShareSheet";
@@ -17,6 +18,7 @@ import { OrderSheet, type EditTarget } from "./round/OrderSheet";
 type View = "orders" | "service";
 
 export default function Round() {
+  const { t, tn } = useI18n();
   const id = Number(useParams().id);
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -52,7 +54,7 @@ export default function Round() {
     onSuccess: () => {
       utils.rounds.list.invalidate();
       navigate("/", { replace: true });
-      toast.success("Tournée supprimée");
+      toast.success(t("roundDeleted"));
     },
     onError: showError,
   });
@@ -61,14 +63,14 @@ export default function Round() {
   if (error || !data) {
     return (
       <div className="page-in">
-        <PageHeader back="/" title="Tournée introuvable" />
+        <PageHeader back="/" title={t("roundNotFound")} />
       </div>
     );
   }
 
   const { round, orders } = data;
   const open = round.status === "open";
-  const close = () => setStatus.mutate({ id, status: "closed" }, { onSuccess: () => toast.success("Tournée fermée") });
+  const close = () => setStatus.mutate({ id, status: "closed" }, { onSuccess: () => toast.success(t("roundClosed")) });
 
   return (
     <div className="page-in">
@@ -78,11 +80,11 @@ export default function Round() {
         actions={
           <>
             {open && (
-              <button className="icon-btn text-ink" onClick={() => setSharing(true)} aria-label="Faire commander le groupe">
+              <button className="icon-btn text-ink" onClick={() => setSharing(true)} aria-label={t("groupOrder")}>
                 <QrCode size={21} />
               </button>
             )}
-            <button className="icon-btn text-ink" onClick={() => setActions(true)} aria-label="Plus d'actions">
+            <button className="icon-btn text-ink" onClick={() => setActions(true)} aria-label={t("moreActions")}>
               <MoreHorizontal size={22} />
             </button>
           </>
@@ -90,20 +92,20 @@ export default function Round() {
       >
         <p className="mt-2 flex items-center gap-2 text-sm text-muted">
           <span className={`chip px-2.5 py-1 text-[12px] font-semibold ${open ? "bg-pistache/15 text-pistache" : "bg-surface text-muted"}`}>
-            {open ? "Commandes ouvertes" : "Fermée"}
+            {open ? t("ordersOpen") : t("closedChip")}
           </span>
-          {orders.length > 0 && `${orders.length} glace${orders.length > 1 ? "s" : ""}`}
+          {orders.length > 0 && tn("ices", orders.length)}
         </p>
       </PageHeader>
 
       <div className="mb-6">
         <Segmented
-          label="Vue"
+          label={t("view")}
           value={view}
           onChange={setView}
           options={[
-            { value: "orders", label: "Commandes" },
-            { value: "service", label: "Service" },
+            { value: "orders", label: t("ordersTab") },
+            { value: "service", label: t("serviceTab") },
           ]}
         />
       </div>
@@ -121,7 +123,7 @@ export default function Round() {
         <MenuGroup>
           <MenuRow
             icon={Pencil}
-            label="Renommer"
+            label={t("rename")}
             onClick={() => {
               setActions(false);
               setRenaming(round.title);
@@ -130,8 +132,8 @@ export default function Round() {
           {open ? (
             <MenuRow
               icon={Lock}
-              label="Fermer les commandes"
-              value="Le lien ne prend plus rien"
+              label={t("closeOrders")}
+              value={t("closeOrdersSub")}
               onClick={() => {
                 setActions(false);
                 close();
@@ -140,7 +142,7 @@ export default function Round() {
           ) : (
             <MenuRow
               icon={LockOpen}
-              label="Rouvrir les commandes"
+              label={t("reopenOrders")}
               onClick={() => {
                 setActions(false);
                 setStatus.mutate({ id, status: "open" });
@@ -149,15 +151,15 @@ export default function Round() {
           )}
           <MenuRow
             icon={Trash2}
-            label="Supprimer la tournée"
+            label={t("deleteRound")}
             danger
             onClick={async () => {
               setActions(false);
               if (
                 await confirmDialog({
-                  title: "Supprimer cette tournée ?",
-                  message: "Ses commandes seront effacées, et le lien ne marchera plus.",
-                  confirmLabel: "Supprimer",
+                  title: t("deleteRoundConfirm"),
+                  message: t("deleteRoundMsg"),
+                  confirmLabel: t("delete"),
                   danger: true,
                 })
               )
@@ -170,10 +172,10 @@ export default function Round() {
       <Sheet
         open={renaming !== null}
         onClose={() => setRenaming(null)}
-        title="Renommer"
+        title={t("rename")}
         footer={
           <button className="btn-ink w-full py-4" disabled={!renaming?.trim() || rename.isPending} onClick={() => rename.mutate({ id, title: renaming!.trim() })}>
-            Enregistrer
+            {t("save")}
           </button>
         }
       >

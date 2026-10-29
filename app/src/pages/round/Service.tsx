@@ -5,6 +5,7 @@ import { buildPlan } from "@contracts/plan";
 import { IceCream } from "@/components/IceCream";
 import { confirmDialog } from "@/components/Confirm";
 import { describeOrder, lookup, plural } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 import { trpc } from "@/providers/trpc";
 import { showError } from "@/lib/errors";
 import type { RoundData } from "./types";
@@ -88,9 +89,10 @@ export function Service({
   mode: boolean;
   onMode: (open: boolean) => void;
 }) {
+  const { t, tn } = useI18n();
   const { round, orders, menu } = data;
   const l = lookup(menu);
-  const plan = buildPlan(orders, menu);
+  const plan = buildPlan(orders, menu, t("removedFlavor"));
   const state = useServiceState(data);
   const { checks } = state;
   const utils = trpc.useUtils();
@@ -102,8 +104,8 @@ export function Service({
   if (plan.orders.length === 0) {
     return (
       <div className="rounded-3xl border-2 border-dashed border-line px-6 py-10 text-center">
-        <p className="font-display text-lg font-bold">Rien à servir pour l'instant</p>
-        <p className="mt-1 text-[15px] text-muted">Le plan de service apparaît dès la première commande.</p>
+        <p className="font-display text-lg font-bold">{t("nothingToServe")}</p>
+        <p className="mt-1 text-[15px] text-muted">{t("planAppears")}</p>
       </div>
     );
   }
@@ -129,12 +131,10 @@ export function Service({
         </span>
         <span className="min-w-0 flex-1">
           <span className="block font-display text-[21px] font-bold leading-tight">
-            {doneSteps === 0 ? "Commencer le service" : doneSteps === steps.length ? "Revoir le service" : "Reprendre le service"}
+            {doneSteps === 0 ? t("startService") : doneSteps === steps.length ? t("reviewService") : t("resumeService")}
           </span>
           <span className="mt-0.5 block text-sm text-onink/70">
-            {doneSteps === 0
-              ? `Étape par étape, un bac à la fois · ${plural(steps.length, "étape")}`
-              : `${doneSteps} sur ${plural(steps.length, "étape")} faite${doneSteps > 1 ? "s" : ""}`}
+            {doneSteps === 0 ? t("startServiceSub", { steps: tn("steps", steps.length) }) : tn("stepsDone", doneSteps, { total: steps.length })}
           </span>
         </span>
         <ChevronRight size={22} className="flex-none text-onink/60" />
@@ -142,15 +142,15 @@ export function Service({
 
       <div className="card p-4">
         <div className="mb-2.5 flex items-baseline justify-between">
-          <p className="font-semibold">{served === total ? "Tout le monde est servi" : `${served} sur ${total} servi${served > 1 ? "s" : ""}`}</p>
+          <p className="font-semibold">{served === total ? t("everyoneServed") : tn("servedOf", served, { total })}</p>
           <button
             className="flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink"
             onClick={async () => {
-              if (await confirmDialog({ title: "Recommencer le service ?", message: "Toutes les étapes seront décochées.", confirmLabel: "Recommencer" }))
+              if (await confirmDialog({ title: t("restartConfirm"), message: t("restartMsg"), confirmLabel: t("restart") }))
                 reset.mutate({ id: round.id });
             }}
           >
-            <RotateCcw size={15} /> Recommencer
+            <RotateCcw size={15} /> {t("restart")}
           </button>
         </div>
         <div className="h-2.5 overflow-hidden rounded-full bg-sunken">
@@ -158,9 +158,9 @@ export function Service({
         </div>
       </div>
 
-      <h2 className="eyebrow -mb-4">Récapitulatif</h2>
+      <h2 className="eyebrow -mb-4">{t("recap")}</h2>
 
-      <Step n={step++} title="Sortir les contenants">
+      <Step n={step++} title={t("getContainersOut")}>
         {plan.containers.map(({ container, count }) => {
           const key = checkKey.container(container.id, count);
           return (
@@ -180,7 +180,7 @@ export function Service({
         })}
       </Step>
 
-      <Step n={step++} title="Les boules" hint="Un bac à la fois : servez toutes ses boules, puis remettez-le au congélateur.">
+      <Step n={step++} title={t("theScoops")} hint={t("tubHint")}>
         {steps.map((s) => {
           if (s.kind !== "tub") return null;
           const done = stepDone(s, state, plan);
@@ -200,7 +200,7 @@ export function Service({
               sub={s.tub.groups.map((g, i) => (
                 <span key={i} className="mt-0.5 block">
                   <span className="font-medium text-ink/80">{groupLabel(g, menu)} : </span>
-                  {g.people.map((p) => (p.count > 1 ? `${p.order.name} (${p.count} boules)` : p.order.name)).join(", ")}
+                  {g.people.map((p) => (p.count > 1 ? t("personScoops", { name: p.order.name, n: p.count }) : p.order.name)).join(", ")}
                 </span>
               ))}
               count={s.tub.scoops}
@@ -210,7 +210,7 @@ export function Service({
       </Step>
 
       {plan.toppingGroups.length > 0 && (
-        <Step n={step++} title="Les suppléments">
+        <Step n={step++} title={t("theToppings")}>
           {plan.toppingGroups.map((g) => {
             const key = checkKey.topping(g.topping.id, g.people.length);
             const tileKeys = g.people.map((o) => checkKey.toppingFor(g.topping.id, o.id));
@@ -229,7 +229,7 @@ export function Service({
         </Step>
       )}
 
-      <Step n={step++} title="Servir">
+      <Step n={step++} title={t("serve")}>
         {plan.orders.map((o) => (
           <Task
             key={o.id}
@@ -253,10 +253,10 @@ export function Service({
 
       {served === total && round.status === "open" && (
         <div className="page-in rounded-[28px] bg-ink p-6 text-center text-onink">
-          <p className="font-display text-[22px] font-bold">Bonne dégustation</p>
-          <p className="mt-1 text-sm text-onink/70">Toutes les glaces sont servies. Fermez la tournée pour la ranger dans l'historique.</p>
+          <p className="font-display text-[22px] font-bold">{t("enjoy")}</p>
+          <p className="mt-1 text-sm text-onink/70">{t("allServedClose")}</p>
           <button className="btn mt-4 bg-onink px-6 text-ink hover:bg-onink/90" onClick={onClose}>
-            Fermer la tournée
+            {t("closeRound")}
           </button>
         </div>
       )}

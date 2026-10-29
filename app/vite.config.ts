@@ -21,5 +21,8 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
+    // French and English ship in the main bundle (~510 kB, ~150 kB gzipped);
+    // the service animations load apart (ServiceMode)
+    chunkSizeWarningLimit: 600,
   },
 });

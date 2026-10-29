@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { TRPCError } from "@trpc/server";
 import { and, count, eq, max } from "drizzle-orm";
 import { HARD_LIMITS } from "@contracts/plans";
 import { MAX_SCOOPS } from "@contracts/menu";
 import { CONTAINER_KINDS, containers, flavors, toppings } from "@db/schema";
 import { authedQuery, createRouter } from "./middleware";
 import { getDb } from "./queries/connection";
+import { fail } from "./lib/fail";
 import { loadMenu, ownedBy, restoreDefaults } from "./queries/menu";
 
 const name = (len: number) => z.string().trim().min(1).max(len);
@@ -21,7 +21,7 @@ async function nextPosition(table: typeof flavors | typeof toppings | typeof con
 }
 
 function notFound(): never {
-  throw new TRPCError({ code: "NOT_FOUND", message: "Introuvable" });
+  fail("NOT_FOUND", "notFound");
 }
 
 export const menuRouter = createRouter({
@@ -44,7 +44,7 @@ export const menuRouter = createRouter({
         return { id: input.id };
       }
       const next = await nextPosition(flavors, ctx.user.id);
-      if (next.count >= HARD_LIMITS.flavors) throw new TRPCError({ code: "FORBIDDEN", message: "Carte complète" });
+      if (next.count >= HARD_LIMITS.flavors) fail("FORBIDDEN", "menu.flavorsFull");
       const [res] = await getDb()
         .insert(flavors)
         .values({ ...values, userId: ctx.user.id, position: next.position });
@@ -61,7 +61,7 @@ export const menuRouter = createRouter({
         return { id: input.id };
       }
       const next = await nextPosition(toppings, ctx.user.id);
-      if (next.count >= HARD_LIMITS.toppings) throw new TRPCError({ code: "FORBIDDEN", message: "Liste complète" });
+      if (next.count >= HARD_LIMITS.toppings) fail("FORBIDDEN", "menu.listFull");
       const [res] = await getDb()
         .insert(toppings)
         .values({ ...values, userId: ctx.user.id, position: next.position });
@@ -87,7 +87,7 @@ export const menuRouter = createRouter({
         return { id };
       }
       const next = await nextPosition(containers, ctx.user.id);
-      if (next.count >= HARD_LIMITS.containers) throw new TRPCError({ code: "FORBIDDEN", message: "Liste complète" });
+      if (next.count >= HARD_LIMITS.containers) fail("FORBIDDEN", "menu.listFull");
       const [res] = await getDb()
         .insert(containers)
         .values({ ...values, userId: ctx.user.id, position: next.position });
@@ -112,7 +112,7 @@ export const menuRouter = createRouter({
     if (input.kind === "containers") {
       const menu = await loadMenu(ctx.user.id);
       if (menu.containers.filter((c) => !c.archived && c.id !== input.id).length === 0)
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Gardez au moins un contenant" });
+        fail("BAD_REQUEST", "menu.keepOneContainer");
     }
     const [res] = await getDb()
       .update(tables[input.kind])
@@ -135,5 +135,7 @@ export const menuRouter = createRouter({
       return { success: true };
     }),
 
-  restoreDefaults: authedQuery.mutation(async ({ ctx }) => ({ added: await restoreDefaults(ctx.user.id) })),
+  restoreDefaults: authedQuery
+    .input(z.object({ lang: z.enum(["fr", "en"]).default("fr") }))
+    .mutation(async ({ ctx, input }) => ({ added: await restoreDefaults(ctx.user.id, input.lang) })),
 });

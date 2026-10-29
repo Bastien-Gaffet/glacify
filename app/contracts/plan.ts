@@ -25,9 +25,9 @@ export type TubGroup<O> = {
 
 export type Tub<O> = { flavorId: number; flavor: Flavor; scoops: number; groups: TubGroup<O>[] };
 
-const missingFlavor = (id: number): Flavor => ({
+const missingFlavor = (id: number, name: string): Flavor => ({
   id,
-  name: "Parfum retiré",
+  name,
   color: "#D6D3D1",
   available: false,
   archived: true,
@@ -39,9 +39,10 @@ export function countFlavors(orders: { scoops: number[] }[]) {
   return counts;
 }
 
-export function buildPlan<O extends PlanOrder>(orders: O[], menu: Menu) {
+/** `removedName` names a flavor taken off the carte since it was ordered */
+export function buildPlan<O extends PlanOrder>(orders: O[], menu: Menu, removedName = "Parfum retiré") {
   const flavorById = new Map(menu.flavors.map((f) => [f.id, f]));
-  const flavor = (id: number) => flavorById.get(id) ?? missingFlavor(id);
+  const flavor = (id: number) => flavorById.get(id) ?? missingFlavor(id, removedName);
   const rank = new Map(menu.flavors.map((f, i) => [f.id, i]));
   const active = orders.filter((o) => o.scoops.length > 0);
   const counts = countFlavors(active);

@@ -18,8 +18,8 @@ describe("orderProblem", () => {
     expect(orderProblem(menu, { ...base, toppings: [10] }, { guest: true })).toBeNull();
   });
   it("needs a scoop and respects the container size", () => {
-    expect(orderProblem(menu, { ...base, scoops: [] }, { guest: false })).toMatch(/au moins/);
-    expect(orderProblem(menu, { ...base, scoops: [1, 1, 1] }, { guest: false })).toMatch(/2 boules/);
+    expect(orderProblem(menu, { ...base, scoops: [] }, { guest: false })).toEqual({ code: "order.noScoop" });
+    expect(orderProblem(menu, { ...base, scoops: [1, 1, 1] }, { guest: false })).toMatchObject({ code: "order.maxScoops", params: { max: 2 } });
   });
   it("lets the host, not guests, use a flavor that ran out", () => {
     expect(orderProblem(menu, { ...base, scoops: [2] }, { guest: true })).not.toBeNull();

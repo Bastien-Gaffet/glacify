@@ -1,12 +1,13 @@
-import { TRPCError } from "@trpc/server";
 import { and, asc, count, eq } from "drizzle-orm";
 import { FREE_LIMITS, HARD_LIMITS } from "@contracts/plans";
 import { orders, rounds, users, type AppUser, type OrderRow } from "@db/schema";
 import { isPremium, planLimit } from "../lib/entitlements";
+import { fail } from "../lib/fail";
+import type { ErrorCode } from "@contracts/errors";
 import { getDb } from "./connection";
 
-export function notFound(what = "Tournée introuvable"): never {
-  throw new TRPCError({ code: "NOT_FOUND", message: what });
+export function notFound(what: ErrorCode = "round.notFound"): never {
+  fail("NOT_FOUND", what);
 }
 
 export async function ownedRound(userId: number, id: number) {
@@ -25,7 +26,7 @@ export async function roundByCode(code: string) {
     .innerJoin(users, eq(users.id, rounds.userId))
     .where(eq(rounds.code, code))
     .limit(1);
-  return row ?? notFound("Ce lien de commande n'existe pas ou plus");
+  return row ?? notFound("round.linkNotFound");
 }
 
 export async function roundOrders(roundId: number) {
@@ -50,7 +51,7 @@ export function orderDto(o: OrderRow) {
 export async function assertOrderRoom(host: AppUser, roundId: number) {
   const [{ n }] = await getDb().select({ n: count() }).from(orders).where(eq(orders.roundId, roundId));
   if (n >= HARD_LIMITS.ordersPerRound)
-    throw new TRPCError({ code: "FORBIDDEN", message: "Cette tournée est complète" });
+    fail("FORBIDDEN", "round.full");
   if (!isPremium(host) && n >= FREE_LIMITS.ordersPerRound) planLimit("orders_per_round");
 }
 

@@ -1,16 +1,25 @@
 import type { Menu } from "@contracts/menu";
+import { i18n } from "./i18n";
 
-export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
+/** "3 cornets": the carte's own names, made plural the French and English way */
+export const plural = (n: number, one: string, many = `${one}${/[sxz]$/i.test(one) ? "" : "s"}`) => `${n} ${n > 1 || (n === 0 && i18n().lang === "en") ? many : one}`;
+
+/** "chocolat, vanille et mangue" */
+export const listOf = (items: string[]) => {
+  const { t } = i18n();
+  return items.length > 1 ? `${items.slice(0, -1).join(", ")} ${t("and")} ${items.at(-1)}` : (items[0] ?? "");
+};
 
 export function lookup(menu: Menu) {
+  const { t } = i18n();
   const f = new Map(menu.flavors.map((x) => [x.id, x]));
-  const t = new Map(menu.toppings.map((x) => [x.id, x]));
+  const tp = new Map(menu.toppings.map((x) => [x.id, x]));
   const c = new Map(menu.containers.map((x) => [x.id, x]));
   return {
-    flavor: (id: number) => f.get(id) ?? { id, name: "Parfum retiré", color: "#D6D3D1", available: false, archived: true },
-    topping: (id: number) => t.get(id) ?? { id, name: "Supplément retiré", available: false, archived: true },
+    flavor: (id: number) => f.get(id) ?? { id, name: t("removedFlavor"), color: "#D6D3D1", available: false, archived: true },
+    topping: (id: number) => tp.get(id) ?? { id, name: t("removedTopping"), available: false, archived: true },
     container: (id: number) =>
-      c.get(id) ?? { id, name: "Contenant", kind: "cup" as const, maxScoops: 4, available: false, archived: true },
+      c.get(id) ?? { id, name: t("containerFallback"), kind: "cup" as const, maxScoops: 4, available: false, archived: true },
   };
 }
 
@@ -37,5 +46,5 @@ export function initials(name: string) {
 }
 
 export function shortDate(d: Date | string) {
-  return new Date(d).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+  return new Date(d).toLocaleDateString(i18n().locale, { weekday: "short", day: "numeric", month: "short" });
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useI18n } from "@/lib/i18n";
 
 type Request = {
   title: string;
@@ -23,6 +24,7 @@ export function confirmDialog(opts: Omit<Request, "resolve">): Promise<boolean> 
 }
 
 export function ConfirmHost() {
+  const { t } = useI18n();
   const [req, setReq] = useState<Request | null>(null);
   useEffect(() => {
     show = setReq;
@@ -49,10 +51,10 @@ export function ConfirmHost() {
         {req.message && <div className="mt-2 text-[15px] text-muted">{req.message}</div>}
         <div className="mt-6 flex gap-2">
           <button className="btn-soft flex-1" onClick={() => close(false)}>
-            Annuler
+            {t("cancel")}
           </button>
           <button className={`${req.danger ? "btn bg-danger text-white hover:bg-danger/90" : "btn-ink"} flex-1`} onClick={() => close(true)} autoFocus>
-            {req.confirmLabel ?? "Confirmer"}
+            {req.confirmLabel ?? t("confirm")}
           </button>
         </div>
       </div>
