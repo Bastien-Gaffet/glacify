@@ -6,6 +6,8 @@
  * negative id; when the server gives it its real id, every waiting change
  * that names it is rewritten, and so are the pages that show it.
  */
+import superjson from "superjson";
+
 export type Pending = {
   n: number;
   path: string;
@@ -20,7 +22,10 @@ type State = { items: Pending[]; next: number; ids: Record<string, number> };
 
 function load(): State {
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY) ?? "null") as Partial<State> | null;
+    // superjson: the dates inside a change (the reading timer's) stay dates
+    const saved = localStorage.getItem(KEY);
+    // (a queue saved by an earlier version is plain JSON)
+    const raw = (saved ? (superjson.parse(saved) ?? JSON.parse(saved)) : null) as Partial<State> | null;
     const ids = JSON.parse(localStorage.getItem(IDS_KEY) ?? "{}") as Record<string, number>;
     return { items: raw?.items ?? [], next: raw?.next ?? -1, ids };
   } catch {
@@ -33,7 +38,7 @@ const listeners = new Set<() => void>();
 
 function save() {
   try {
-    localStorage.setItem(KEY, JSON.stringify({ items: state.items, next: state.next }));
+    localStorage.setItem(KEY, superjson.stringify({ items: state.items, next: state.next }));
     localStorage.setItem(IDS_KEY, JSON.stringify(state.ids));
   } catch {
     /* storage full or unavailable: the changes stay in memory */

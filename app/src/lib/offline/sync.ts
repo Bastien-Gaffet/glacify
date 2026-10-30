@@ -78,11 +78,13 @@ export function flush(): Promise<void> {
     }
   })().finally(() => {
     flushing = null;
+    // Reads waiting for the changes go ahead either way: offline they fail at once
+    // and the screens keep what they have, instead of waiting for the network
+    for (const r of idleWaiters.splice(0)) r();
     if (outbox.size) {
       retry = setTimeout(() => void flush(), RETRY);
       return;
     }
-    for (const r of idleWaiters.splice(0)) r();
     void qc?.invalidateQueries();
   });
   return flushing;
