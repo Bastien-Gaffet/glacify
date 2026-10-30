@@ -245,6 +245,9 @@ function PopHome() {
         <svg viewBox="0 0 120 170" width="128" height="182" aria-hidden="true" className="absolute -bottom-[46px] -right-1 rotate-12">
           <circle cx="60" cy="30" r="26" fill="#F29BB0" stroke="rgb(var(--ink))" strokeWidth="4" />
           <circle cx="60" cy="56" r="28" fill="#9FE0C8" stroke="rgb(var(--ink))" strokeWidth="4" />
+          {/* The same little shine as the app's ice creams */}
+          <ellipse cx="50" cy="19" rx="7.2" ry="4.4" fill="#fff" opacity="0.55" transform="rotate(-25 50 19)" />
+          <ellipse cx="49" cy="45" rx="7.8" ry="4.7" fill="#fff" opacity="0.55" transform="rotate(-25 49 45)" />
           <g fill="#3E2A22">
             <rect x="48" y="50" width="9" height="4" rx="2" transform="rotate(-20 52 52)" />
             <rect x="66" y="60" width="9" height="4" rx="2" transform="rotate(30 70 62)" />

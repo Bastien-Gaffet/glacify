@@ -409,4 +409,6 @@ export const en: Dict = {
   waitingChanges_one: "{n} change waiting",
   waitingChanges_other: "{n} changes waiting",
   syncing: "Syncing…",
+  roundNotHereTitle: "Not on this phone yet",
+  roundNotHereText: "This round will show as soon as you are back online.",
 };

@@ -55,7 +55,9 @@ export function TRPCProvider({ children }: { children: ReactNode }) {
           maxAge: WEEK,
           // Raise when the shape of the kept data changes
           buster: "1",
-          dehydrateOptions: { shouldDehydrateQuery: (q) => q.state.status === "success" },
+          // Everything ever received, even when the last refresh failed (going offline
+          // marks a polled query as errored but keeps its data: it must stay on the phone)
+          dehydrateOptions: { shouldDehydrateQuery: (q) => q.state.data !== undefined },
         }}
       >
         {children}

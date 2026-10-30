@@ -4,8 +4,37 @@ import { trpc } from "@/providers/trpc";
 import { IceCream } from "@/components/IceCream";
 import { showError } from "@/lib/errors";
 import { useI18n } from "@/lib/i18n";
+import { usePop } from "@/lib/style";
 
 type Mode = "start" | "login" | "register";
+
+function Sparkle({ className, fill }: { className: string; fill: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={`absolute ${className}`}>
+      <path d="M12 2 l2.4 6.6 6.6 2.4 -6.6 2.4 -2.4 6.6 -2.4 -6.6 -6.6 -2.4 6.6 -2.4 Z" fill={fill} stroke="rgb(var(--ink))" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Pop: three ice creams stuck on a lilac card, each at its own height and angle */
+function PopHero() {
+  return (
+    <div className="relative h-[330px] overflow-hidden rounded-[38px] border-[3px] border-ink bg-lilac">
+      <Sparkle className="left-[26px] top-[30px] h-[30px] w-[30px]" fill="rgb(var(--lemon))" />
+      <Sparkle className="right-[26px] top-[40px] h-5 w-5" fill="#FFFFFF" />
+      <Sparkle className="bottom-[30px] right-[24px] h-6 w-6" fill="rgb(var(--lemon))" />
+      <div className="absolute left-[5%] top-[142px] -rotate-[10deg]">
+        <IceCream kind="cup" colors={["#A9CF8A", "#F2E3B3"]} size={110} />
+      </div>
+      <div className="absolute left-[31%] top-[70px] rotate-[4deg]">
+        <IceCream kind="cone" colors={["#F2E3B3", "#6B3F2A", "#F29BB0"]} size={140} />
+      </div>
+      <div className="absolute left-[67%] top-[100px] rotate-[12deg]">
+        <IceCream kind="cone" colors={["#9FE0C8", "#D9416A"]} size={104} />
+      </div>
+    </div>
+  );
+}
 
 /**
  * First screen. Starting needs no account: a session on this device, with the
@@ -14,6 +43,7 @@ type Mode = "start" | "login" | "register";
  */
 export default function Welcome() {
   const { t, lang } = useI18n();
+  const pop = usePop();
   const [mode, setMode] = useState<Mode>("start");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -33,15 +63,16 @@ export default function Welcome() {
   };
 
   return (
-    <div className="mx-auto flex min-h-[calc(100svh-var(--safe-top))] max-w-md flex-col px-6 pb-[max(1.5rem,var(--safe-bottom))] pt-10">
+    <div className="mx-auto flex min-h-[calc(100svh-var(--safe-top))] max-w-md flex-col px-6 pb-[max(1.5rem,var(--safe-bottom))] pt-10 pop:px-5 pop:pt-8">
       <div className="page-in flex-1">
-        <div className="flex items-end justify-center gap-1">
+        {pop && <PopHero />}
+        <div className="flex items-end justify-center gap-1 pop:hidden">
           <IceCream kind="cup" colors={["#A9CF8A", "#F2E3B3"]} size={64} />
           <IceCream kind="cone" colors={["#F2E3B3", "#6B3F2A", "#F29BB0"]} size={84} />
           <IceCream kind="cone" colors={["#FFB547", "#D9416A"]} size={64} />
         </div>
-        <h1 className="mt-8 text-center font-display text-[56px] font-extrabold leading-none tracking-tight">Glacify</h1>
-        <p className="mx-auto mt-3 max-w-[300px] text-center text-[17px] leading-snug text-muted">
+        <h1 className="mt-8 text-center font-display text-[56px] font-extrabold leading-none tracking-tight pop:mt-6 pop:font-bold pop:tracking-normal">Glacify</h1>
+        <p className="mx-auto mt-3 max-w-[300px] text-center text-[17px] leading-snug text-muted pop:mt-2 pop:text-[16px] pop:font-bold">
           {t("welcomeTagline")}
         </p>
       </div>
@@ -104,6 +135,16 @@ export default function Welcome() {
         {mode === "start" && <p className="text-center text-xs text-muted">{t("welcomeNoAccount")}</p>}
       </form>
 
+      {pop && mode === "start" ? (
+        <div className="mt-4 flex gap-2.5">
+          <button onClick={() => setMode("login")} className="btn flex-1 border-[3px] border-ink py-2.5 text-[15px]">
+            {t("signIn")}
+          </button>
+          <button onClick={() => setMode("register")} className="btn flex-1 border-[3px] border-ink bg-mint py-2.5 text-[15px]">
+            {t("createAccount")}
+          </button>
+        </div>
+      ) : (
       <div className="mt-6 flex flex-col items-center gap-2.5 text-sm text-muted">
         {mode !== "login" && (
           <button onClick={() => setMode("login")} className="hover:text-ink">
@@ -116,6 +157,7 @@ export default function Welcome() {
           </button>
         )}
       </div>
+      )}
     </div>
   );
 }

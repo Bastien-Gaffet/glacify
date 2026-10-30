@@ -55,7 +55,7 @@ export default function Round() {
   const [renaming, setRenaming] = useState<string | null>(null);
 
   // Guests' orders arrive live while the round is open
-  const { data, isLoading, error } = trpc.rounds.get.useQuery(
+  const { data, isLoading, isPaused } = trpc.rounds.get.useQuery(
     { id },
     { refetchInterval: (q) => (q.state.data?.round.status === "open" && !editing ? 4000 : false), retry: false },
   );
@@ -82,7 +82,17 @@ export default function Round() {
   }, [realId, navigate]);
 
   if (isLoading) return null;
-  if (error || !data) {
+  // Offline and never opened on this phone: not lost, just not here yet
+  if (!data && (isPaused || !navigator.onLine)) {
+    return (
+      <div className="page-in">
+        <PageHeader back="/" title={t("roundNotHereTitle")}>
+          <p className="mt-2 text-[15px] text-muted">{t("roundNotHereText")}</p>
+        </PageHeader>
+      </div>
+    );
+  }
+  if (!data) {
     return (
       <div className="page-in">
         <PageHeader back="/" title={t("roundNotFound")} />

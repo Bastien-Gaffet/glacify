@@ -24,6 +24,7 @@ export function EmptyArt({ kind, size = 150 }: { kind: EmptyKind; size?: number 
             <circle cx="80" cy="56" r="25" fill={c("mint")} {...line} />
             <path d="M54 66 L80 132 L106 66 Z" fill={c("sun")} {...line} />
             <ellipse cx="70" cy="26" rx="6" ry="3.5" fill="#fff" opacity="0.7" transform="rotate(-25 70 26)" />
+            <ellipse cx="70" cy="46" rx="6.5" ry="3.8" fill="#fff" opacity="0.7" transform="rotate(-25 70 46)" />
           </g>
           <Sparkle x={130} y={30} />
           <Sparkle x={28} y={52} s={0.7} />

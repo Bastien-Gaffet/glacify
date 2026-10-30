@@ -407,4 +407,6 @@ export const fr = {
   waitingChanges_one: "{n} changement en attente",
   waitingChanges_other: "{n} changements en attente",
   syncing: "Synchronisation…",
+  roundNotHereTitle: "Pas encore sur ce téléphone",
+  roundNotHereText: "Cette tournée s'affichera dès le retour du réseau.",
 };
