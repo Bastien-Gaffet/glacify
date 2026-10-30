@@ -122,6 +122,11 @@ Gelateria.
 - écran de bienvenue / connexion : carte lilas avec trois glaces dessinées par `IceCream`
   (pot, grand cornet, petit cornet, hauteurs et angles différents, centrées), étincelles,
   « Se connecter » et « Créer un compte » en pilules côte à côte ;
+- nouvelle glace : touche sur un parfum = une boule, **appui long = une boule de moins** ; pas de
+  pastille ni de reflet sur les tuiles de parfums (ce sont des carrés, comme la vitrine et la carte) ;
+- bilan : parfums du podium en carrés arrondis penchés à motif, chiffres en tuiles orange / menthe /
+  lilas, « Partager le bilan » en jaune ; l'image partagée a un cadre **violet** (lilac), les
+  mêmes carrés à motif et les mêmes tuiles ;
 - reflets : toute boule dessinée a son petit reflet blanc (glaces de l'app, cornet de l'accueil,
   dessins vides, logo) ;
 - Moi : carte profil lilas, tuiles de chiffres (tournées, glaces servies, parfum favori,

@@ -57,7 +57,7 @@ export function TRPCProvider({ children }: { children: ReactNode }) {
           buster: "1",
           // Everything ever received, even when the last refresh failed (going offline
           // marks a polled query as errored but keeps its data: it must stay on the phone)
-          dehydrateOptions: { shouldDehydrateQuery: (q) => q.state.data !== undefined },
+          dehydrateOptions: { shouldDehydrateQuery: (q) => q.state.data !== undefined && q.state.data !== null },
         }}
       >
         {children}

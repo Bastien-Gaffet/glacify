@@ -411,4 +411,5 @@ export const en: Dict = {
   syncing: "Syncing…",
   roundNotHereTitle: "Not on this phone yet",
   roundNotHereText: "This round will show as soon as you are back online.",
+  holdToRemove: "Long press a flavour to take a scoop back.",
 };

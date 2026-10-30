@@ -409,4 +409,5 @@ export const fr = {
   syncing: "Synchronisation…",
   roundNotHereTitle: "Pas encore sur ce téléphone",
   roundNotHereText: "Cette tournée s'affichera dès le retour du réseau.",
+  holdToRemove: "Appui long sur un parfum pour retirer une boule.",
 };

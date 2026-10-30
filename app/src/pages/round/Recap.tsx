@@ -9,8 +9,10 @@ import { Share } from "@capacitor/share";
 import { Directory, Filesystem } from "@capacitor/filesystem";
 import { buildPlan } from "@contracts/plan";
 import type { Flavor } from "@contracts/menu";
-import { PatternOverlay } from "@/components/FlavorPattern";
+import { renderToStaticMarkup } from "react-dom/server";
+import { PatternMarks, PatternOverlay } from "@/components/FlavorPattern";
 import { useI18n, type Translator } from "@/lib/i18n";
+import { usePop } from "@/lib/style";
 import { buzz } from "@/lib/feel";
 import { play } from "@/lib/sound";
 import type { RoundData } from "./types";
@@ -37,9 +39,14 @@ function duration(L: Translator, minutes: number) {
 const PLACES = [1, 0, 2];
 const STEP_HEIGHT = [112, 80, 58];
 const STEP_COLOR = ["bg-sun", "bg-accent text-onaccent", "bg-mint"];
+// Pop: each flavor sticker leans its own way, like the display case
+const TILT = [-6, 5, -4];
+// The numbers, in the Moi screen's colour tiles
+const STAT_COLOR = ["pop:bg-sun", "pop:bg-mint", "pop:bg-lilac"];
 
 function PodiumView({ podium }: { podium: Podium }) {
   const { tn } = useI18n();
+  const pop = usePop();
   return (
     <div className="flex items-end justify-center gap-2.5">
       {PLACES.filter((p) => podium[p]).map((p) => {
@@ -47,16 +54,16 @@ function PodiumView({ podium }: { podium: Podium }) {
         return (
           <div key={flavor.id} className="flex w-[30%] max-w-[120px] flex-col items-center">
             <motion.span
-              className="relative mb-2 h-16 w-16 overflow-hidden rounded-full border-[3px] border-ink"
+              className="relative mb-2 h-16 w-16 overflow-hidden rounded-full border-[3px] border-ink pop:rounded-[20px]"
               style={{ background: flavor.color }}
               initial={{ y: -160, opacity: 0, rotate: -30 }}
-              animate={{ y: 0, opacity: 1, rotate: 0 }}
+              animate={{ y: 0, opacity: 1, rotate: pop ? TILT[p] : 0 }}
               transition={{ delay: 0.25 + (2 - p) * 0.22, type: "spring", stiffness: 380, damping: 14 }}
             >
               <PatternOverlay look={flavor} />
             </motion.span>
             <p className="w-full truncate text-center font-display text-[15px] font-bold leading-tight">{flavor.name}</p>
-            <p className="mb-2 text-[12px] font-semibold text-muted">{tn("scoops", count)}</p>
+            <p className="mb-2 text-[12px] font-semibold text-muted pop:font-extrabold pop:text-ink">{tn("scoops", count)}</p>
             <motion.div
               className={clsx(
                 "flex w-full items-start justify-center rounded-t-2xl border-[3px] border-b-0 border-ink pt-2 font-display text-[28px] font-bold",
@@ -79,6 +86,18 @@ function PodiumView({ podium }: { podium: Podium }) {
 /** rgb(var(--x)) for the canvas, which cannot read CSS variables */
 const token = (name: string) => `rgb(${getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim().split(/\s+/).join(",")})`;
 
+/** A flavor's colour and pattern as a picture, for the canvas */
+function flavorPicture(flavor: Flavor) {
+  const marks = renderToStaticMarkup(<PatternMarks pattern={flavor.pattern} accent={flavor.accent} />);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="${flavor.color}"/>${marks}</svg>`;
+  return new Promise<HTMLImageElement>((ok, ko) => {
+    const img = new Image();
+    img.onload = () => ok(img);
+    img.onerror = ko;
+    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  });
+}
+
 /** The summary as a picture (1080×1350), to send to the group */
 async function recapImage(L: Translator, title: string, s: ReturnType<typeof summary>) {
   await document.fonts.ready;
@@ -90,7 +109,7 @@ async function recapImage(L: Translator, title: string, s: ReturnType<typeof sum
   c.height = H;
   const g = c.getContext("2d")!;
   const ink = token("ink");
-  g.fillStyle = token("sun");
+  g.fillStyle = token("lilac");
   g.fillRect(0, 0, W, H);
   g.fillStyle = "#FFFFFF";
   g.strokeStyle = ink;
@@ -126,11 +145,19 @@ async function recapImage(L: Translator, title: string, s: ReturnType<typeof sum
     g.fillStyle = p === 1 ? "#FFFFFF" : ink;
     g.font = `700 80px ${display}`;
     g.fillText(String(p + 1), x, base - h + 95);
-    g.fillStyle = item.flavor.color;
+    // The flavor as a sticker: a rounded square with its pattern, leaning like on screen
+    const picture = await flavorPicture(item.flavor);
+    g.save();
+    g.translate(x, base - h - 190);
+    g.rotate((TILT[p]! * Math.PI) / 180);
     g.beginPath();
-    g.arc(x, base - h - 190, 80, 0, Math.PI * 2);
-    g.fill();
+    g.roundRect(-80, -80, 160, 160, 48);
+    g.save();
+    g.clip();
+    g.drawImage(picture, -80, -80, 160, 160);
+    g.restore();
     g.stroke();
+    g.restore();
     g.fillStyle = ink;
     g.font = `700 40px ${display}`;
     const label = item.flavor.name.length > 14 ? `${item.flavor.name.slice(0, 13)}…` : item.flavor.name;
@@ -144,11 +171,29 @@ async function recapImage(L: Translator, title: string, s: ReturnType<typeof sum
   g.lineTo(W - 110, base);
   g.stroke();
 
-  // Numbers
-  const stats = [L.tn("ices", s.ices), L.tn("scoops", s.scoops)];
-  if (s.minutes !== null) stats.push(duration(L, s.minutes));
-  g.font = `700 50px ${display}`;
-  g.fillText(stats.join("  ·  "), W / 2, 1040);
+  // Numbers, in colour tiles
+  const stats: [string, string][] = [
+    [String(s.ices), L.tn("iceWord", s.ices)],
+    [String(s.scoops), L.tn("scoopWord", s.scoops)],
+  ];
+  if (s.minutes !== null) stats.push([duration(L, s.minutes), L.t("ofService")]);
+  const tileW = 270;
+  const gap = 30;
+  const left = (W - (stats.length * tileW + (stats.length - 1) * gap)) / 2;
+  const tiles = [token("sun"), token("mint"), token("lilac")];
+  stats.forEach(([n, label], i) => {
+    const tx = left + i * (tileW + gap);
+    g.fillStyle = tiles[i]!;
+    g.beginPath();
+    g.roundRect(tx, 960, tileW, 150, 44);
+    g.fill();
+    g.stroke();
+    g.fillStyle = ink;
+    g.font = `700 60px ${display}`;
+    g.fillText(n, tx + tileW / 2, 1035);
+    g.font = `700 32px ${display}`;
+    g.fillText(label, tx + tileW / 2, 1080);
+  });
   g.fillStyle = token("muted");
   g.font = `600 34px ${display}`;
   g.fillText(L.t("recapImageFoot"), W / 2, 1210);
@@ -224,18 +269,18 @@ export function RecapBody({ data, children }: { data: RoundData; children?: Reac
         {stats.map(([n, label], i) => (
           <motion.div
             key={label}
-            className="card flex flex-col items-center justify-center px-1 py-3"
+            className={clsx("card flex flex-col items-center justify-center px-1 py-3 pop:rounded-[22px]", STAT_COLOR[i])}
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.9 + i * 0.1 }}
           >
             <span className="tabular font-display text-[24px] font-bold leading-tight">{n}</span>
-            <span className="text-[12px] font-semibold text-muted">{label}</span>
+            <span className="text-[12px] font-semibold text-muted pop:font-extrabold pop:text-ink">{label}</span>
           </motion.div>
         ))}
       </div>
       <div className="mt-7 flex w-full max-w-xs flex-col gap-2.5">
-        <button className="btn-soft" onClick={share} disabled={sharing}>
+        <button className="btn-soft pop:bg-lemon pop:shadow-pop pop:hover:bg-lemon" onClick={share} disabled={sharing}>
           <Share2 size={18} /> {L.t("shareRecap")}
         </button>
         {children}

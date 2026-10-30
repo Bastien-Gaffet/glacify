@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Check, IceCreamBowl, IceCreamCone, X } from "lucide-react";
 import { clsx } from "clsx";
 import { inkOn, type Menu } from "@contracts/menu";
@@ -31,10 +32,12 @@ export function draftToInput(d: Draft, fallbackName: string) {
   };
 }
 
+const HOLD = 450;
+
 /**
  * Composing one ice cream: who it is for, cone or cup, scoops (tap a flavor to
- * add a scoop, tap a scoop to remove it), toppings and a note. The preview
- * builds up as flavors are picked.
+ * add a scoop; a long press on it, or a tap on the scoop above, takes one
+ * back), toppings and a note. The preview builds up as flavors are picked.
  */
 export function OrderForm({
   menu,
@@ -64,6 +67,21 @@ export function OrderForm({
   const flavors = menu.flavors.filter((f) => !f.archived && (f.available || inDraft.has(f.id) || !guest));
   const toppings = menu.toppings.filter((t) => !t.archived && (t.available || draft.toppings.includes(t.id) || !guest));
   const set = (patch: Partial<Draft>) => onChange({ ...draft, ...patch });
+
+  // Long press on a flavor: its last scoop goes; the click that follows is ignored
+  const hold = useRef<{ timer?: ReturnType<typeof setTimeout>; fired: boolean }>({ fired: false });
+  const startHold = (id: number) => {
+    hold.current.fired = false;
+    clearTimeout(hold.current.timer);
+    hold.current.timer = setTimeout(() => {
+      const i = draft.scoops.lastIndexOf(id);
+      if (i < 0) return;
+      hold.current.fired = true;
+      buzz("press");
+      set({ scoops: draft.scoops.filter((_, j) => j !== i) });
+    }, HOLD);
+  };
+  const stopHold = () => clearTimeout(hold.current.timer);
 
   return (
     <div className="space-y-6">
@@ -139,26 +157,43 @@ export function OrderForm({
           )}
         </div>
         {/* The service opens one tub at a time, so the scoops go in tub order */}
-        {draft.scoops.length > 1 && <p className="-mt-1 mb-3 text-[13px] text-muted">{t("orderMayChange")}</p>}
+        {draft.scoops.length > 0 && (
+          <p className="-mt-1 mb-3 text-[13px] text-muted">
+            {t("holdToRemove")}
+            {draft.scoops.length > 1 && ` ${t("orderMayChange")}`}
+          </p>
+        )}
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {flavors.map((f) => {
             const n = inDraft.get(f.id);
             const out = !f.available;
+            // Not disabled when full: a long press must still take a scoop back
+            const blocked = full || out;
             return (
               <button
                 key={f.id}
                 type="button"
-                disabled={full || out}
-                onClick={() => (buzz(), play("pop"), set({ scoops: [...draft.scoops, f.id] }))}
+                aria-disabled={blocked}
+                onPointerDown={() => startHold(f.id)}
+                onPointerUp={stopHold}
+                onPointerLeave={stopHold}
+                onPointerCancel={stopHold}
+                onContextMenu={(e) => e.preventDefault()}
+                onClick={() => {
+                  if (hold.current.fired) return void (hold.current.fired = false);
+                  if (blocked) return;
+                  buzz();
+                  play("pop");
+                  set({ scoops: [...draft.scoops, f.id] });
+                }}
                 className={clsx(
-                  "relative flex min-h-[76px] flex-col items-start justify-end overflow-hidden rounded-2xl p-2.5 text-left text-[13px] font-semibold leading-tight transition active:scale-95 pop:rounded-[20px] pop:border-[3px] pop:border-ink pop:font-display pop:text-[14px]",
+                  "relative flex min-h-[76px] select-none flex-col items-start justify-end overflow-hidden rounded-2xl p-2.5 text-left text-[13px] font-semibold leading-tight transition [-webkit-touch-callout:none] active:scale-95 pop:rounded-[20px] pop:border-[3px] pop:border-ink pop:font-display pop:text-[14px]",
                   full && !n && "opacity-40",
                   out && "opacity-40",
                 )}
                 style={{ background: f.color, color: inkOn(f.color) }}
               >
                 <PatternOverlay look={f} />
-                <span className="absolute left-2.5 top-2.5 h-3 w-3 rounded-full bg-white/50" />
                 {n ? (
                   <span className="tabular absolute right-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-ink px-1.5 text-[12px] text-onink">
                     {n}
