@@ -24,7 +24,7 @@ export function PageHeader({
       {(back || actions) && (
         <div className="mb-3 flex items-center justify-between">
           {back ? (
-            <button onClick={() => navigate(back)} className="icon-btn -ml-2.5 text-ink" aria-label={t("back")}>
+            <button onClick={() => navigate(back)} className="icon-btn -ml-2.5 text-ink pop:ml-0 pop:border-[3px] pop:border-ink" aria-label={t("back")}>
               <ArrowLeft size={22} />
             </button>
           ) : (

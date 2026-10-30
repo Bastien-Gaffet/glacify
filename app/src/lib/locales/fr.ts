@@ -358,4 +358,53 @@ export const fr = {
   favoriteFlavor: "Le parfum le plus commandé",
   sounds: "Sons",
   soundsSub: "Un petit bruit à chaque boule et à chaque commande",
+
+  // Moi, pop
+  statRounds_one: "tournée",
+  statRounds_other: "tournées",
+  statServed_one: "glace servie",
+  statServed_other: "glaces servies",
+  noFavoriteYet: "Pas encore de favori",
+
+  // Colour picker
+  colorOf: "Couleur de {name}",
+  colorOfNew: "Couleur du parfum",
+  colorBefore: "Avant",
+  colorAfter: "Après",
+  hexCode: "Code couleur",
+  paste: "Coller",
+  copied: "Code copié",
+  pasteFailed: "Aucun code couleur dans le presse-papiers.",
+  nearShades: "Nuances proches",
+  yourFlavors: "Vos parfums",
+  keepColor: "Garder cette couleur",
+  hue: "Teinte",
+  shade: "Nuance",
+
+  // Ma carte, pop
+  menuEyebrow: "Ce que vous proposez",
+  menuHintPop: "Touchez un parfum pour le modifier, l'interrupteur pour le dire épuisé.",
+  aFlavor: "Un parfum",
+
+  // Tournée, pop
+  codeN: "code {code}",
+  anIce: "Une glace",
+
+  // Service, faster
+  fillAll: "Tout remplir",
+  serveAll: "Tout servir · {n}",
+  backToRound: "Revenir à la tournée",
+  playful: "Côté ludique",
+  playfulSub: "Bilan et podium en fin de service, confettis, fanfare",
+
+  unserve: "{name} : remettre à servir",
+
+  // Updates and offline
+  updateReady: "Une nouvelle version de Glacify est prête.",
+  updateNow: "Mettre à jour",
+  linkWhenOnline: "Le lien de commande sera prêt dès le retour du réseau.",
+  offline: "Hors ligne",
+  waitingChanges_one: "{n} changement en attente",
+  waitingChanges_other: "{n} changements en attente",
+  syncing: "Synchronisation…",
 };

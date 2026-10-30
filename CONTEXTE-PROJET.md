@@ -109,13 +109,31 @@ Gelateria.
 - accueil : badge d'initiales penché, carte « Nouvelle tournée » + bouton « C'est parti », chaque
   tournée en cours avec sa barre de progression framboise (continue, arrondie) et sa tuile QR code
   à côté, « La vitrine » (parfums disponibles en pastilles arrondies cerclées de noir, motifs) ;
-- barre du bas flottante, icônes + libellés, l'onglet actif rempli en framboise sur tout son
-  tiers, arrondi des deux côtés ;
+- barre du bas flottante, icônes + libellés (Ma carte = livre ouvert), l'onglet actif rempli en
+  framboise sur tout son tiers, arrondi des deux côtés ; la pastille **glisse** d'un onglet à
+  l'autre (pas de fondu) ;
+- toutes les glaces (liste des commandes, service, invité) sont dessinées comme celle de
+  l'accueil : contour noir, cornet jaune uni, pot blanc à bande framboise, légèrement penchées
+  dans les listes (`IceCream.tsx`, branche pop) ;
+- détail d'une tournée : « Commandes ouvertes · code XXXX » au-dessus du titre, tuiles « Faire
+  commander le groupe » (orange, QR) et « Une glace » (lilas), pastilles « Nouveau »/« Servi » ;
+- Ma carte : onglets Parfums / Suppléments / Contenants ; chaque parfum est une carte autocollant
+  (pastille à motif + interrupteur en haut, nom et état dessous, jamais superposés) ;
+- Moi : carte profil lilas, tuiles de chiffres (tournées, glaces servies, parfum favori,
+  `rounds.stats`), icônes des réglages sur pastilles de couleur penchées (`MenuRow tone`),
+  « Se déconnecter » en pilule framboise ;
+- **aucun sélecteur natif** (décision de Bastien, 30 oct. 2026) : la couleur d'un parfum se choisit
+  dans `ColorPicker.tsx` (part de la couleur actuelle, avant/après, carré de nuances, barre de
+  teinte, code hexadécimal à taper, copier ou coller, nuances proches, couleurs de la carte) ;
 - service plein écran : progression en segments colorés (vert fait, framboise en cours) et « 2/6 »
   ; l'écran d'un bac prend la couleur et le motif du parfum, avec le bac dessiné, « Bac 1 sur 4 »,
   « 5 boules / 2 posées, encore 3 » et le nom en grand (texte blanc sur parfum foncé) ; les
   personnes sont dans une carte blanche qui s'arrête à son contenu et défile à l'intérieur
-  au-dessus du bouton « Au congélateur ! » ; une tuile cochée passe en menthe et penche.
+  au-dessus du bouton principal ; une tuile cochée passe en menthe et penche.
+- service rapide (30 oct. 2026) : le bouton d'un bac est « Tout remplir » (toutes les boules
+  tombent, puis le bac part au congélateur après ~450 ms, le temps que la dernière boule se pose) ;
+  au service, une glace servie s'efface et les autres glissent à sa place (pas de réordonnancement),
+  les servies deviennent des pastilles en bas (un appui les remet à servir), « Tout servir · n ».
 - En code : variante Tailwind `pop:` et règles `[data-style="pop"]` dans `src/index.css` pour les
   pièces communes (`.card`, `.btn-*`, `.field`, `.title`) ; l'accueil Pop est un composant à part
   (`PopHome`), l'Épuré garde `PlainHome`.
@@ -132,8 +150,9 @@ Choisie par Bastien le 25 octobre 2026. Un comptoir clair et lumineux, une typog
   cornet gaufré ou dans un pot, construites boule par boule pendant la commande ;
 - tuiles de parfums pleines couleur, texte foncé ou blanc selon la couleur (`inkOn`).
 
-Logo : un cornet à une boule blanche ourlée de rose, sur fond framboise (`marketing/logo/`,
-icônes rendues par `node marketing/logo/render.cjs`).
+Logo (piste A « Le cornet », choisie le 30 oct. 2026) : le cornet de l'accueil, boules rose et
+menthe penchées, contours noirs, sur fond framboise `#D9416A` (`marketing/logo/`, icônes web et
+Android rendues par `node marketing/logo/render.cjs`, Playwright via `NODE_PATH`).
 
 ## Côté ludique (29 oct. 2026, tout validé par Bastien)
 
@@ -158,6 +177,35 @@ icônes rendues par `node marketing/logo/render.cjs`).
 - **Sons** (`src/lib/sound.ts`, synthétisés, aucun fichier) : « pop » par boule, « ding » à
   l'arrivée d'une commande, « tada » au congélateur et au bilan. **Désactivés par défaut**,
   Moi > Préférences > Sons.
+- **Interrupteur « Côté ludique »** (Moi > Préférences, `src/lib/playful.ts`, activé par défaut) :
+  coupé, plus de bilan ni de podium proposés en fin de service ni de carte « Voir le bilan », plus
+  de confettis ni de fanfare au congélateur ; la fin du service dit simplement « Tout le monde est
+  servi ». L'écran « votre glace est prête » des invités reste.
+
+## Hors ligne et mises à jour (30 oct. 2026)
+
+- **Mises à jour** : `index.html`, `sw.js` et `version.json` sont servis en `no-cache`, les assets
+  hachés en `immutable` (`api/lib/static.ts`). Avant, la WebView de l'APK gardait l'ancienne page
+  tant qu'on ne vidait pas le cache. Chaque build écrit `/version.json` ; l'app le compare à son
+  propre build au retour au premier plan et toutes les 15 min (`src/lib/updates.ts`) et se
+  recharge seule (au retour dans l'app) ou propose « Mettre à jour » (en cours d'usage).
+- **L'app s'ouvre sans réseau** : service worker `offline/sw-template.js`, complété au build par
+  `vite.config.ts` (liste des fichiers à garder, polices latin seulement). Pages : réseau d'abord,
+  copie gardée hors ligne ; assets : copie d'abord ; l'API n'est jamais mise en cache par lui.
+- **Les données restent sur le téléphone** : le cache des requêtes est gardé une semaine dans
+  `localStorage` (`glacify-cache`, superjson).
+- **Les changements de l'hôte attendent le réseau** (`src/lib/offline/`) : un lien tRPC
+  (`sync.ts`) met en file (`outbox.ts`, `glacify-outbox`) toute modification qui ne joint pas le
+  serveur, l'applique tout de suite aux écrans (`patches.ts`) et l'envoie dans l'ordre au retour
+  du réseau, puis tout est relu. Ce qui est créé hors ligne a un id négatif provisoire, remplacé
+  partout (file, adresse de la page) quand le serveur donne le vrai. Les lectures attendent que la
+  file soit vide. Pastille « Hors ligne · n changements en attente » / « Synchronisation… » en
+  haut (`SyncBadge.tsx`), les pages lui font de la place (`--sync-gap`).
+- Ne marche pas hors ligne, par nature : commandes des invités par le lien, connexion, création
+  de compte, « Remettre les classiques ». Une tournée créée hors ligne n'a son lien (code) qu'une
+  fois synchronisée.
+- **À faire ensuite : la même chose dans Babelibris**, une fois validé sur le téléphone de
+  Bastien (décision du 30 oct. 2026).
 
 ## Mise en ligne (faite le 26 octobre 2026)
 
@@ -172,11 +220,12 @@ Les scripts de `deploy/` doivent rester en LF (`.gitattributes`) : extraits en C
 
 1. Premier test sur téléphone (site et APK) et retours de Bastien, notamment sur le mode
    service plein écran.
-2. ~~Nouvelle direction artistique~~ : faite le 29 oct. 2026 (style Pop, voir plus haut).
-   Retours de Bastien sur téléphone à recueillir.
+2. ~~Nouvelle direction artistique~~ : faite le 29 oct. 2026 (style Pop, voir plus haut),
+   étendue à tous les écrans et nouveau logo le 30 oct. 2026.
 3. ~~D'autres façons de rendre l'app ludique~~ : faites le 29 oct. 2026 (voir « Côté ludique »).
 4. Prix (par contenant, par boule, par supplément) et total par tournée, pour l'usage commerce.
 5. (Seulement si Bastien le décide un jour) une version payante : le mécanisme est déjà là.
 6. Tutoriel interactif (visite guidée, comme Equiliz) joué sur une tournée de démonstration.
 7. Statistiques : parfums les plus demandés, pour savoir quoi racheter.
 8. Plusieurs serveurs sur la même tournée (partager l'accès au plan de service).
+9. Hors ligne et mises à jour automatiques dans Babelibris (même mécanique que Glacify).

@@ -11,9 +11,13 @@ import { useI18n } from "@/lib/i18n";
 import { buzz } from "@/lib/feel";
 import { play } from "@/lib/sound";
 import { trpc } from "@/providers/trpc";
+import { usePop } from "@/lib/style";
 import { showError } from "@/lib/errors";
 import type { EditTarget } from "./OrderSheet";
 import type { RoundData } from "./types";
+
+// Pop: each ice cream leans a little, like stickers stuck by hand
+const TILTS = [-6, 4, -3, 5, -4];
 
 export function Orders({
   data,
@@ -27,6 +31,7 @@ export function Orders({
   onService: () => void;
 }) {
   const { t, tn } = useI18n();
+  const pop = usePop();
   const { round, orders, menu } = data;
   const l = lookup(menu);
   const open = round.status === "open";
@@ -59,7 +64,24 @@ export function Orders({
 
   return (
     <div className="space-y-6">
-      {open && (
+      {open && pop && (
+        <div className="flex gap-2.5">
+          <button onClick={onShare} className="flex min-w-0 flex-1 items-center gap-2.5 rounded-[26px] border-[3px] border-ink bg-sun px-3.5 py-3 text-left transition active:scale-[0.98]">
+            <span className="flex h-[42px] w-[42px] flex-none -rotate-6 items-center justify-center rounded-[14px] border-[3px] border-ink bg-lemon">
+              <QrCode size={21} />
+            </span>
+            <span className="font-display text-[17px] font-bold leading-tight">{t("groupOrder")}</span>
+          </button>
+          <button
+            onClick={() => onEdit({ mode: "new" })}
+            className="flex w-28 flex-none flex-col items-center justify-center gap-0.5 rounded-[26px] border-[3px] border-ink bg-lilac font-display text-[15px] font-semibold transition active:scale-[0.97]"
+          >
+            <Plus size={26} strokeWidth={2.8} /> {t("anIce")}
+          </button>
+        </div>
+      )}
+
+      {open && !pop && (
         <button onClick={onShare} className="card flex w-full items-center gap-4 p-4 text-left transition hover:bg-sunken/70">
           <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-ink text-onink pop:border-[2.5px] pop:border-ink pop:bg-lemon pop:text-ink">
             <QrCode size={22} />
@@ -78,24 +100,31 @@ export function Orders({
           <p className="mt-1 text-[15px] text-muted">{open ? t("shareOrAdd") : t("reopenToTake")}</p>
         </div>
       ) : (
-        <ul className="stagger space-y-2">
-          {orders.map((o) => {
+        <ul className="stagger space-y-2 pop:space-y-2.5">
+          {orders.map((o, i) => {
             const c = l.container(o.containerId);
             return (
               <li
                 key={o.id}
-                className={clsx("card flex items-center gap-3 p-3 pr-2 transition-shadow duration-700", fresh.has(o.id) && "drop-in ring-4 ring-accent/30")}
+                className={clsx(
+                  "card flex items-center gap-3 p-3 pr-2 transition-shadow duration-700 pop:rounded-[26px]",
+                  fresh.has(o.id) && "drop-in ring-4 ring-accent/30 pop:bg-accent/[0.06]",
+                )}
               >
                 <button className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => onEdit({ mode: "edit", order: o })}>
-                  <div className="flex w-12 flex-none justify-center">
-                    <IceCream kind={c.kind} colors={o.scoops.map((id) => l.flavor(id))} size={40} />
+                  <div className="flex w-12 flex-none justify-center" style={pop ? { transform: `rotate(${TILTS[i % TILTS.length]}deg)` } : undefined}>
+                    <IceCream kind={c.kind} colors={o.scoops.map((id) => l.flavor(id))} size={pop ? 44 : 40} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-1.5 font-semibold">
+                    <p className="flex items-center gap-1.5 font-semibold pop:font-display pop:text-[18px]">
                       <span className="truncate">{o.name}</span>
                       {o.source === "guest" && <Smartphone size={14} className="flex-none text-muted" aria-label={t("orderedFromLink")} />}
-                      {fresh.has(o.id) && <span className="chip pop-in flex-none bg-accent px-2 py-0.5 text-[11px] text-onaccent">{t("newChip")}</span>}
-                      {o.servedAt && <span className="chip flex-none bg-pistache/15 px-2 py-0.5 text-[11px] text-pistache">{t("servedChip")}</span>}
+                      {fresh.has(o.id) && (
+                        <span className="chip pop-in flex-none bg-accent px-2 py-0.5 font-sans text-[11px] text-onaccent pop:border-2 pop:border-ink">{t("newChip")}</span>
+                      )}
+                      {o.servedAt && (
+                        <span className="chip flex-none bg-pistache/15 px-2 py-0.5 font-sans text-[11px] text-pistache pop:border-2 pop:border-ink pop:bg-mint pop:text-ink">{t("servedChip")}</span>
+                      )}
                     </p>
                     <p className="text-sm leading-snug text-muted">{describeOrder(menu, o)}</p>
                     {o.note && <p className="mt-0.5 text-sm italic text-ink/80">« {o.note} »</p>}
@@ -127,7 +156,7 @@ export function Orders({
         </ul>
       )}
 
-      {open && (
+      {open && !pop && (
         <button className="btn-soft w-full py-4" onClick={() => onEdit({ mode: "new" })}>
           <Plus size={18} /> {t("addIce")}
         </button>

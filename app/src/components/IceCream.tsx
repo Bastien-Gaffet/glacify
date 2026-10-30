@@ -1,11 +1,13 @@
 import { useId } from "react";
 import type { ContainerKind, ScoopLook } from "@contracts/menu";
 import { PatternMarks } from "./FlavorPattern";
+import { usePop } from "@/lib/style";
 
 /**
  * The ice cream itself: stacked scoops (bottom first) on a cone or in a cup,
  * each in its flavor's colour and pattern. An empty order shows a dashed
- * placeholder scoop.
+ * placeholder scoop. In the pop look everything is outlined in ink, like the
+ * cone on the home screen.
  */
 export function IceCream({
   kind,
@@ -23,19 +25,24 @@ export function IceCream({
   className?: string;
 }) {
   const clip = useId();
+  const pop = usePop();
+  // The outline must stay inside the drawing: a little more room in pop
+  const pad = pop ? 2 : 0;
   const r = 13;
   const step = 11;
   const scoops = colors.length ? colors : [null];
   const n = scoops.length;
-  const bottomCy = 3 + r + (n - 1) * step;
+  const bottomCy = 3 + pad + r + (n - 1) * step;
   const cone = kind === "cone";
   // The bottom scoop sinks into its container: half into the cone, more into the cup
   const baseY = bottomCy + (cone ? 1 : -3);
-  const height = baseY + (cone ? 34 : 24) + 1;
+  const height = baseY + (cone ? 34 : 24) + 1 + pad;
+  const outline = pop ? { stroke: "rgb(var(--ink))", strokeWidth: 3, strokeLinejoin: "round" as const } : null;
 
   return (
     <svg
       viewBox={`0 0 60 ${height}`}
+      overflow="visible"
       width={size}
       height={(size * height) / 60}
       aria-hidden="true"
@@ -47,7 +54,12 @@ export function IceCream({
           const cy = bottomCy - i * step;
           const cx = 30 + (i % 2 === 0 ? 0 : i % 4 === 1 ? -2.5 : 2.5);
           const last = i === n - 1;
-          if (!color) return <circle key="empty" cx={cx} cy={cy} r={r} fill="none" stroke="#CFCAC5" strokeWidth="1.6" strokeDasharray="4 3.5" />;
+          if (!color)
+            return pop ? (
+              <circle key="empty" cx={cx} cy={cy} r={r} fill="none" stroke="rgb(var(--ink))" strokeOpacity="0.35" strokeWidth="2.6" strokeDasharray="5 4" />
+            ) : (
+              <circle key="empty" cx={cx} cy={cy} r={r} fill="none" stroke="#CFCAC5" strokeWidth="1.6" strokeDasharray="4 3.5" />
+            );
           const look = typeof color === "string" ? { color, pattern: "none" as const, accent: "" } : color;
           return (
             <g key={`${i}-${look.color}-${look.pattern}`} className={animateLast && last ? "scoop-drop" : undefined}>
@@ -64,14 +76,29 @@ export function IceCream({
                   </g>
                 </>
               )}
-              <path d={`M${cx - r + 1.5} ${cy + 4} a${r} ${r} 0 0 0 ${2 * r - 3} 0`} fill="none" stroke="#000" strokeOpacity="0.07" strokeWidth="3" />
-              <circle cx={cx} cy={cy} r={r - 0.5} fill="none" stroke="#000" strokeOpacity="0.08" />
+              {outline ? (
+                <circle cx={cx} cy={cy} r={r} fill="none" {...outline} />
+              ) : (
+                <>
+                  <path d={`M${cx - r + 1.5} ${cy + 4} a${r} ${r} 0 0 0 ${2 * r - 3} 0`} fill="none" stroke="#000" strokeOpacity="0.07" strokeWidth="3" />
+                  <circle cx={cx} cy={cy} r={r - 0.5} fill="none" stroke="#000" strokeOpacity="0.08" />
+                </>
+              )}
               <ellipse cx={cx - 5} cy={cy - 5.5} rx="3.6" ry="2.2" fill="#fff" opacity="0.55" transform={`rotate(-25 ${cx - 5} ${cy - 5.5})`} />
             </g>
           );
         })
         .reverse()}
-      {cone ? (
+      {pop ? (
+        cone ? (
+          <path d={`M15 ${baseY} L30 ${baseY + 34} L45 ${baseY} Z`} fill="#F2C46B" {...outline} />
+        ) : (
+          <>
+            <path d={`M9 ${baseY} L51 ${baseY} L46 ${baseY + 24} L14 ${baseY + 24} Z`} fill="#FFFFFF" {...outline} />
+            <path d={`M10.6 ${baseY + 6} L49.4 ${baseY + 6} L48.7 ${baseY + 10} L11.3 ${baseY + 10} Z`} fill="rgb(var(--accent))" />
+          </>
+        )
+      ) : cone ? (
         <>
           <clipPath id={clip}>
             <path d={`M15 ${baseY} L30 ${baseY + 34} L45 ${baseY} Z`} />

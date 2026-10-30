@@ -13,6 +13,7 @@ import { useI18n } from "@/lib/i18n";
 import { usePop } from "@/lib/style";
 import { buzz } from "@/lib/feel";
 import { play } from "@/lib/sound";
+import { playfulOn } from "@/lib/playful";
 import { RecapBody } from "./Recap";
 import { groupLabel, serviceSteps, stepDone, tileDone, type ServiceStep } from "./serviceSteps";
 import type { ServiceState } from "./useServiceState";
@@ -282,17 +283,23 @@ export function ServiceMode({
   const nextRef = useRef(next);
   nextRef.current = next;
 
+  const playful = playfulOn();
+  // Scoops just placed get to land (scoop-drop, 320 ms) before the tub closes
+  const LAND = reduced ? 0 : 450;
   const celebrate = (look: ScoopLook, label: string) => {
-    buzz("success");
-    play("tada");
-    setParty({ look, label, n: Date.now() });
-    setTimeout(
-      () => {
-        setParty(null);
-        nextRef.current();
-      },
-      reduced ? 350 : 950,
-    );
+    setTimeout(() => {
+      buzz("success");
+      if (!playful) return nextRef.current();
+      play("tada");
+      setParty({ look, label, n: Date.now() });
+      setTimeout(
+        () => {
+          setParty(null);
+          nextRef.current();
+        },
+        reduced ? 350 : 950,
+      );
+    }, LAND);
   };
 
   // The page underneath stays put
@@ -334,7 +341,7 @@ export function ServiceMode({
     const colors = plan.totals.map((t) => t.flavor.color);
     content = (
       <div className="flex min-h-full flex-col items-center justify-center text-center">
-        {left === 0 ? (
+        {left === 0 && !playful ? null : left === 0 ? (
           <div className="relative h-0 w-full">
             <Confetti colors={colors.length ? colors : ["rgb(var(--accent))"]} count={28} />
           </div>
@@ -347,7 +354,24 @@ export function ServiceMode({
             ))}
           </div>
         )}
-        {left === 0 ? (
+        {left === 0 && !playful ? (
+          <>
+            <span className="flex h-20 w-20 items-center justify-center rounded-full bg-pistache/15 text-pistache pop:border-[3px] pop:border-ink pop:bg-mint pop:text-ink">
+              <Check size={38} strokeWidth={3} />
+            </span>
+            <h2 className="title mt-5">{L.t("everyoneServed")}</h2>
+            <div className="mt-8 flex flex-col items-center gap-2">
+              {round.status === "open" && (
+                <button className="btn-ink" onClick={onCloseRound}>
+                  {L.t("closeRound")}
+                </button>
+              )}
+              <button className="btn-ghost" onClick={onExit}>
+                {L.t("backToRound")}
+              </button>
+            </div>
+          </>
+        ) : left === 0 ? (
           <RecapBody data={data}>
             {round.status === "open" && (
               <button className="btn-ink" onClick={onCloseRound}>
@@ -489,8 +513,10 @@ export function ServiceMode({
     primary = isDone(step)
       ? { label: L.t("nextTub"), onClick: next }
       : {
-          label: L.t("toFreezer"),
+          label: L.t("fillAll"),
           onClick: () => {
+            buzz("press");
+            play("pop");
             state.setChecks([step.key, ...step.tiles.map((t) => t.key)], true);
             celebrate(tub.flavor, L.t("toFreezer"));
           },
@@ -549,9 +575,12 @@ export function ServiceMode({
       },
     };
   } else {
-    // Who is still waiting comes first; served ice creams slide to the end
-    const ordered = [...plan.orders].sort((a, b) => Number(state.isServed(a.id)) - Number(state.isServed(b.id)));
-    const waiting = plan.orders.filter((o) => !state.isServed(o.id)).length;
+    // A served ice cream fades out and the others glide into its place; the
+    // served ones wait at the bottom as small chips (a tap takes one back)
+    const toServe = plan.orders.filter((o) => !state.isServed(o.id));
+    const done = plan.orders.filter((o) => state.isServed(o.id));
+    const waiting = toServe.length;
+    const glide = { type: "spring", stiffness: 420, damping: 38 } as const;
     head = (
       <Heading
         eyebrow={L.t("lastStep")}
@@ -562,34 +591,79 @@ export function ServiceMode({
     content = (
       <>
         <div className="grid grid-cols-2 gap-2.5">
-          {ordered.map((o, k) => {
-            const served = state.isServed(o.id);
-            return (
-              <Tile
+          <AnimatePresence initial={false} mode="popLayout">
+            {toServe.map((o) => (
+              <motion.div
                 key={o.id}
-                done={served}
-                tilt={k % 2 ? 2 : -2}
-                label={`${o.name}, ${describeOrder(menu, o)}`}
-                onTap={() => {
-                  buzz(served ? "tap" : "press");
-                  if (!served) play("pop");
-                  state.serve(o.id, !served);
-                }}
+                layout
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.18 } }}
+                transition={glide}
+                className="grid"
               >
-                <motion.span animate={served ? { y: [0, -10, 0], rotate: [0, -6, 0] } : {}} transition={{ duration: 0.4 }}>
+                <Tile
+                  done={false}
+                  tilt={o.id % 2 ? 2 : -2}
+                  label={`${o.name}, ${describeOrder(menu, o)}`}
+                  onTap={() => {
+                    buzz("press");
+                    play("pop");
+                    state.serve(o.id, true);
+                  }}
+                >
                   <IceCream kind={l.container(o.containerId).kind} colors={plan.placed(o).map((f) => l.flavor(f))} size={48} />
-                </motion.span>
-                <span className="w-full truncate text-[16px] font-semibold">{o.name}</span>
-                <span className="line-clamp-2 text-[12px] leading-snug text-muted">{describeOrder(menu, o)}</span>
-                {o.note && <span className="line-clamp-2 text-[12px] italic text-ink/80">« {o.note} »</span>}
-                {served && <span className="text-[12px] font-semibold text-pistache">{L.t("servedTile")}</span>}
-              </Tile>
-            );
-          })}
+                  <span className="w-full truncate text-[16px] font-semibold">{o.name}</span>
+                  <span className="line-clamp-2 text-[12px] leading-snug text-muted">{describeOrder(menu, o)}</span>
+                  {o.note && <span className="line-clamp-2 text-[12px] italic text-ink/80">« {o.note} »</span>}
+                </Tile>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
+        {done.length > 0 && (
+          <motion.section layout transition={glide} className={clsx(waiting > 0 && "mt-6")}>
+            <h3 className="mb-2.5 text-sm font-semibold text-muted">
+              {L.t("servedTile")} · {done.length}
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              <AnimatePresence initial={false}>
+                {done.map((o) => (
+                  <motion.button
+                    key={o.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.6 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.6 }}
+                    transition={glide}
+                    type="button"
+                    aria-label={L.t("unserve", { name: o.name })}
+                    onClick={() => {
+                      buzz("tap");
+                      state.serve(o.id, false);
+                    }}
+                    className="chip bg-pistache/15 py-1.5 pl-1.5 text-[14px] text-ink pop:border-[2.5px] pop:border-ink pop:bg-mint"
+                  >
+                    <IceCream kind={l.container(o.containerId).kind} colors={plan.placed(o).map((f) => l.flavor(f))} size={18} />
+                    {o.name}
+                  </motion.button>
+                ))}
+              </AnimatePresence>
+            </div>
+          </motion.section>
+        )}
       </>
     );
-    primary = waiting ? { label: L.t("stillToServe", { n: waiting }) } : { label: L.t("finish"), onClick: next };
+    primary = waiting
+      ? {
+          label: L.t("serveAll", { n: waiting }),
+          onClick: () => {
+            buzz("success");
+            play("pop");
+            for (const o of plan.orders) if (!state.isServed(o.id)) state.serve(o.id, true);
+          },
+        }
+      : { label: L.t("finish"), onClick: next };
   }
 
   // Pop look: a tub's screen takes the flavor's colour and pattern
@@ -601,7 +675,7 @@ export function ServiceMode({
     <MotionConfig reducedMotion="user">
       <div
         className={clsx("fixed inset-0 z-[60] flex flex-col transition-colors duration-500", pop && !flavorBg ? "bg-surface" : "bg-canvas")}
-        style={{ paddingTop: "var(--safe-top)", paddingBottom: "var(--safe-bottom)", background: flavorBg?.color }}
+        style={{ paddingTop: "calc(var(--safe-top) + var(--sync-gap, 0px))", paddingBottom: "var(--safe-bottom)", background: flavorBg?.color }}
         role="dialog"
         aria-modal="true"
         aria-label={L.t("serviceTab")}

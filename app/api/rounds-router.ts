@@ -65,6 +65,18 @@ export const roundsRouter = createRouter({
     }));
   }),
 
+  /** All-time numbers for the Moi screen */
+  stats: authedQuery.query(async ({ ctx }) => {
+    const db = getDb();
+    const [r] = await db.select({ n: sql<number>`count(*)`.mapWith(Number) }).from(rounds).where(eq(rounds.userId, ctx.user.id));
+    const [o] = await db
+      .select({ n: sql<number>`count(*)`.mapWith(Number) })
+      .from(orders)
+      .innerJoin(rounds, eq(rounds.id, orders.roundId))
+      .where(and(eq(rounds.userId, ctx.user.id), sql`${orders.servedAt} is not null`));
+    return { rounds: r?.n ?? 0, served: o?.n ?? 0 };
+  }),
+
   create: authedQuery
     .input(z.object({ title: z.string().trim().min(1).max(80) }))
     .mutation(async ({ ctx, input }) => {

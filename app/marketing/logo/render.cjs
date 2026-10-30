@@ -7,7 +7,7 @@ const path = require("path");
 const here = __dirname;
 const app = path.resolve(here, "../..");
 const svg = (name) => fs.readFileSync(path.join(here, name), "utf8");
-const BG = "#DE3163";
+const BG = "#D9416A";
 const DENSITIES = { mdpi: 1, hdpi: 1.5, xhdpi: 2, xxhdpi: 3, xxxhdpi: 4 };
 
 (async () => {

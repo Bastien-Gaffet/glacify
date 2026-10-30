@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Check, KeyRound, Languages, LogOut, MonitorSmartphone, Paintbrush, PencilLine, Volume2, Sparkles, UserPlus } from "lucide-react";
+import { Check, KeyRound, Languages, LogOut, MonitorSmartphone, Paintbrush, PartyPopper, PencilLine, Volume2, Sparkles, UserPlus } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/PageHeader";
@@ -11,16 +11,21 @@ import { FREE_LIMITS } from "@contracts/plans";
 import { initials } from "@/lib/format";
 import { showError } from "@/lib/errors";
 import { LANGS, useI18n } from "@/lib/i18n";
-import { STYLES, useStyle } from "@/lib/style";
+import { STYLES, usePop, useStyle } from "@/lib/style";
+import { FlavorDot } from "@/components/FlavorPattern";
+import { IconTile } from "@/components/menu";
 import { setSoundsOn, soundsOn } from "@/lib/sound";
+import { playfulOn, setPlayfulOn } from "@/lib/playful";
 import { Switch } from "@/components/Switch";
 
 type Open = null | "name" | "account" | "password" | "lang" | "style";
 
 export default function Me() {
-  const { t, lang, setLang } = useI18n();
+  const { t, tn, lang, setLang } = useI18n();
   const { style, setStyle } = useStyle();
+  const pop = usePop();
   const [sounds, setSounds] = useState(soundsOn);
+  const [playful, setPlayful] = useState(playfulOn);
   const { user, logout } = useAuth();
   const [open, setOpen] = useState<Open>(null);
   const [name, setName] = useState("");
@@ -39,6 +44,11 @@ export default function Me() {
   const register = trpc.auth.register.useMutation({ onSuccess: done(t("accountCreated")), onError: showError });
   const changePassword = trpc.auth.changePassword.useMutation({ onSuccess: done(t("passwordChanged")), onError: showError });
   const everywhere = trpc.auth.logoutEverywhere.useMutation({ onSuccess: done(t("othersSignedOut")), onError: showError });
+  // Pop's number tiles: all-time counts and the most ordered flavor
+  const { data: stats } = trpc.rounds.stats.useQuery(undefined, { enabled: pop && !!user });
+  const { data: favorite } = trpc.menu.favorite.useQuery(undefined, { enabled: pop && !!user });
+  const { data: menu } = trpc.menu.get.useQuery(undefined, { enabled: pop && !!user });
+  const favLook = favorite && menu?.flavors.find((f) => f.id === favorite.flavorId);
   if (!user) return null;
 
   const openSheet = (o: Open) => {
@@ -51,13 +61,50 @@ export default function Me() {
     <div className="page-in space-y-7">
       <PageHeader title={t("navMe")} />
 
-      <div className="flex items-center gap-4">
-        <span className="flex h-16 w-16 flex-none items-center justify-center rounded-full bg-ink font-display text-2xl font-bold text-onink pop:rotate-6 pop:rounded-[20px] pop:border-[3px] pop:border-ink pop:bg-lilac pop:text-ink">{initials(user.name)}</span>
-        <div className="min-w-0">
-          <p className="truncate font-display text-[22px] font-bold">{user.name}</p>
-          <p className="truncate text-sm text-muted">{user.anonymous ? t("noAccountDevice") : user.email}</p>
+      {pop ? (
+        <>
+          <div className="flex items-center gap-3.5 rounded-[32px] border-[3px] border-ink bg-lilac p-[18px]">
+            <span className="flex h-16 w-16 flex-none -rotate-[7deg] items-center justify-center rounded-[22px] border-[3px] border-ink bg-lemon font-display text-[28px] font-bold">
+              {initials(user.name)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-display text-[26px] font-bold leading-tight">{user.name}</p>
+              <p className="truncate text-[13px] font-bold">{user.anonymous ? t("noAccountDevice") : user.email}</p>
+            </div>
+            <button className="icon-btn h-10 w-10 border-[2.5px] border-ink bg-canvas text-ink" onClick={() => openSheet("name")} aria-label={t("firstName")}>
+              <PencilLine size={18} />
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-[22px] border-[3px] border-ink bg-sun px-1.5 py-2.5 text-center">
+              <p className="tabular font-display text-[28px] font-bold leading-none">{stats?.rounds ?? "–"}</p>
+              <p className="mt-1 text-[12px] font-extrabold">{tn("statRounds", stats?.rounds ?? 0)}</p>
+            </div>
+            <div className="rounded-[22px] border-[3px] border-ink bg-mint px-1.5 py-2.5 text-center">
+              <p className="tabular font-display text-[28px] font-bold leading-none">{stats?.served ?? "–"}</p>
+              <p className="mt-1 text-[12px] font-extrabold">{tn("statServed", stats?.served ?? 0)}</p>
+            </div>
+            <div className="flex flex-col items-center justify-center rounded-[22px] border-[3px] border-ink bg-canvas px-1.5 py-2" title={t("favoriteFlavor")}>
+              {favLook ? (
+                <>
+                  <FlavorDot look={favLook} className="h-[34px] w-[34px] -rotate-6 !rounded-[12px] border-[2.5px] border-ink" />
+                  <p className="mt-1 max-w-full truncate text-[12px] font-extrabold">{favLook.name}</p>
+                </>
+              ) : (
+                <p className="text-center text-[12px] font-extrabold text-muted">{t("noFavoriteYet")}</p>
+              )}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="flex items-center gap-4">
+          <span className="flex h-16 w-16 flex-none items-center justify-center rounded-full bg-ink font-display text-2xl font-bold text-onink">{initials(user.name)}</span>
+          <div className="min-w-0">
+            <p className="truncate font-display text-[22px] font-bold">{user.name}</p>
+            <p className="truncate text-sm text-muted">{user.anonymous ? t("noAccountDevice") : user.email}</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* During the free beta nothing is said about plans (Bastien, 29 Oct 2026) */}
       {!user.beta && (
@@ -82,16 +129,16 @@ export default function Me() {
         </div>
       )}
 
-      <MenuGroup title={t("profile")}>
-        <MenuRow icon={PencilLine} label={t("firstName")} value={user.name} onClick={() => openSheet("name")} />
-      </MenuGroup>
+      {!pop && (
+        <MenuGroup title={t("profile")}>
+          <MenuRow icon={PencilLine} label={t("firstName")} value={user.name} onClick={() => openSheet("name")} />
+        </MenuGroup>
+      )}
 
       <MenuGroup title={t("preferences")}>
-        <MenuRow icon={Languages} label={t("language")} value={LANGS.find((l) => l.code === lang)!.name} onClick={() => setOpen("lang")} />
+        <MenuRow icon={Languages} tone="lemon" label={t("language")} value={LANGS.find((l) => l.code === lang)!.name} onClick={() => setOpen("lang")} />
         <div className="flex min-h-[64px] w-full items-center gap-3.5 px-4 py-2">
-          <span className="flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-canvas text-ink">
-            <Volume2 size={19} />
-          </span>
+          <IconTile icon={Volume2} tone="mint" />
           <span className="min-w-0 flex-1">
             <span className="block truncate font-medium">{t("sounds")}</span>
             <span className="block text-sm leading-snug text-muted">{t("soundsSub")}</span>
@@ -105,14 +152,30 @@ export default function Me() {
             }}
           />
         </div>
-        <MenuRow icon={Paintbrush} label={t("style")} value={t(STYLES.find((s) => s.code === style)!.name)} onClick={() => setOpen("style")} />
+        <div className="flex min-h-[64px] w-full items-center gap-3.5 px-4 py-2">
+          <IconTile icon={PartyPopper} tone="lilac" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-medium">{t("playful")}</span>
+            <span className="block text-sm leading-snug text-muted">{t("playfulSub")}</span>
+          </span>
+          <Switch
+            checked={playful}
+            label={t("playful")}
+            onChange={(on) => {
+              setPlayfulOn(on);
+              setPlayful(on);
+            }}
+          />
+        </div>
+        <MenuRow icon={Paintbrush} tone="sun" label={t("style")} value={t(STYLES.find((s) => s.code === style)!.name)} onClick={() => setOpen("style")} />
       </MenuGroup>
 
       {!user.anonymous && (
         <MenuGroup title={t("accountSecurity")}>
-          <MenuRow icon={KeyRound} label={t("changePassword")} onClick={() => openSheet("password")} />
+          <MenuRow icon={KeyRound} tone="lilac" label={t("changePassword")} onClick={() => openSheet("password")} />
           <MenuRow
             icon={MonitorSmartphone}
+            tone="lemon"
             label={t("logoutOthers")}
             onClick={async () => {
               if (await confirmDialog({ title: t("logoutOthersConfirm"), message: t("logoutOthersMsg"), confirmLabel: t("logoutOthersOk") }))
@@ -122,11 +185,9 @@ export default function Me() {
         </MenuGroup>
       )}
 
-      <MenuGroup>
-        <MenuRow
-          icon={LogOut}
+      <LeaveButton
+          pop={pop}
           label={user.anonymous ? t("leaveSession") : t("signOut")}
-          danger
           onClick={async () => {
             const ok = await confirmDialog(
               user.anonymous
@@ -141,7 +202,6 @@ export default function Me() {
             if (ok) logout();
           }}
         />
-      </MenuGroup>
 
       <p className="text-center text-xs text-muted">Glacify</p>
 
@@ -264,5 +324,20 @@ export default function Me() {
         </MenuGroup>
       </Sheet>
     </div>
+  );
+}
+
+/** Signing out: a row in the plain look, an outlined framboise pill in pop */
+function LeaveButton({ pop, label, onClick }: { pop: boolean; label: string; onClick: () => void }) {
+  if (pop)
+    return (
+      <button className="btn w-full border-[3px] border-ink py-3.5 text-[17px] text-accent active:scale-[0.98]" onClick={onClick}>
+        <LogOut size={19} strokeWidth={2.5} /> {label}
+      </button>
+    );
+  return (
+    <MenuGroup>
+      <MenuRow icon={LogOut} label={label} danger onClick={onClick} />
+    </MenuGroup>
   );
 }

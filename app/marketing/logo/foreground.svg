@@ -1,10 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
   <!-- Android adaptive icon foreground: the mark stays inside the 66dp safe circle -->
-  <g transform="translate(17.2 14.3) scale(1.15)">
-    <circle cx="32" cy="22" r="14" fill="#FFFFFF"/>
-    <path d="M18.5 21.5c3 2.6 4.6-.6 7.4 1.6s5 3.4 6.6.4 4.4-2 6.3-.2 4.4.6 6.7-1.8" fill="none" stroke="#F7B6C6" stroke-width="3" stroke-linecap="round"/>
-    <path d="M18 27 L32 61 L46 27 Z" fill="#F4D49B"/>
-    <clipPath id="cone"><path d="M18 27 L32 61 L46 27 Z"/></clipPath>
-    <path clip-path="url(#cone)" d="M14 27 L40 61 M22 27 L48 61 M30 27 L56 61 M50 27 L24 61 M42 27 L16 61 M34 27 L8 61" stroke="#D3A15E" stroke-width="1.6" stroke-linecap="round"/>
+  <g transform="translate(13 10) scale(0.16)">
+  <g transform="rotate(-12 256 270)">
+    <circle cx="256" cy="150" r="78" fill="#F29BB0" stroke="#1C1917" stroke-width="16"/>
+    <ellipse cx="226" cy="118" rx="18" ry="10" fill="#fff" opacity="0.7" transform="rotate(-25 226 118)"/>
+    <circle cx="256" cy="232" r="88" fill="#9FE0C8" stroke="#1C1917" stroke-width="16"/>
+    <g fill="#3E2A22"><rect x="214" y="218" width="26" height="11" rx="5" transform="rotate(-20 227 223)"/><rect x="276" y="244" width="26" height="11" rx="5" transform="rotate(30 289 249)"/><rect x="246" y="196" width="22" height="10" rx="5" transform="rotate(70 257 201)"/></g>
+    <path d="M164 268 L256 470 L348 268 Z" fill="#F2C46B" stroke="#1C1917" stroke-width="16" stroke-linejoin="round"/>
+  </g>
   </g>
 </svg>

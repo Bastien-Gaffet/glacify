@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
+import { outbox } from "@/lib/offline/outbox";
 
 export function useAuth() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export function useAuth() {
   const logoutMutation = trpc.auth.logout.useMutation({
     onSettled: () => {
       queryClient.clear();
+      outbox.clear();
       navigate("/", { replace: true });
     },
   });

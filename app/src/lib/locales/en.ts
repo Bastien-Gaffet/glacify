@@ -360,4 +360,53 @@ export const en: Dict = {
   favoriteFlavor: "The most ordered flavour",
   sounds: "Sounds",
   soundsSub: "A little noise for each scoop and each order",
+
+  // Moi, pop
+  statRounds_one: "round",
+  statRounds_other: "rounds",
+  statServed_one: "ice cream served",
+  statServed_other: "ice creams served",
+  noFavoriteYet: "No favourite yet",
+
+  // Colour picker
+  colorOf: "Colour of {name}",
+  colorOfNew: "Flavour colour",
+  colorBefore: "Before",
+  colorAfter: "After",
+  hexCode: "Colour code",
+  paste: "Paste",
+  copied: "Code copied",
+  pasteFailed: "No colour code on the clipboard.",
+  nearShades: "Close shades",
+  yourFlavors: "Your flavours",
+  keepColor: "Keep this colour",
+  hue: "Hue",
+  shade: "Shade",
+
+  // Ma carte, pop
+  menuEyebrow: "What you offer",
+  menuHintPop: "Tap a flavour to edit it, the switch to mark it sold out.",
+  aFlavor: "A flavour",
+
+  // Round, pop
+  codeN: "code {code}",
+  anIce: "An ice cream",
+
+  // Service, faster
+  fillAll: "Fill them all",
+  serveAll: "Serve everyone · {n}",
+  backToRound: "Back to the round",
+  playful: "Playful side",
+  playfulSub: "Summary and podium after the service, confetti, fanfare",
+
+  unserve: "{name}: back to serve",
+
+  // Updates and offline
+  updateReady: "A new version of Glacify is ready.",
+  updateNow: "Update",
+  linkWhenOnline: "The order link will be ready once you are back online.",
+  offline: "Offline",
+  waitingChanges_one: "{n} change waiting",
+  waitingChanges_other: "{n} changes waiting",
+  syncing: "Syncing…",
 };

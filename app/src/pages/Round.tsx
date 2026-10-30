@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { ChevronRight, Lock, LockOpen, MoreHorizontal, Pencil, QrCode, Trash2, Trophy } from "lucide-react";
@@ -11,6 +11,9 @@ import { MenuGroup, MenuRow } from "@/components/menu";
 import { showError } from "@/lib/errors";
 import { buzz } from "@/lib/feel";
 import { useI18n } from "@/lib/i18n";
+import { usePop } from "@/lib/style";
+import { playfulOn } from "@/lib/playful";
+import { outbox } from "@/lib/offline/outbox";
 import { Orders } from "./round/Orders";
 import { Service } from "./round/Service";
 import { ShareSheet } from "./round/ShareSheet";
@@ -23,6 +26,7 @@ const RecapScreen = lazy(() => import("./round/Recap").then((m) => ({ default: m
 
 export default function Round() {
   const { t, tn } = useI18n();
+  const pop = usePop();
   const id = Number(useParams().id);
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -71,6 +75,12 @@ export default function Round() {
     onError: showError,
   });
 
+  // A round created offline: once synced, its page moves to its real id
+  const realId = id < 0 ? outbox.realId(id) : undefined;
+  useEffect(() => {
+    if (realId) navigate(`/r/${realId}${window.location.search}`, { replace: true });
+  }, [realId, navigate]);
+
   if (isLoading) return null;
   if (error || !data) {
     return (
@@ -83,16 +93,18 @@ export default function Round() {
   const { round, orders } = data;
   const open = round.status === "open";
   const close = () => setStatus.mutate({ id, status: "closed" }, { onSuccess: () => (buzz("success"), toast.success(t("roundClosed"))) });
-  const finished = orders.length > 0 && (!open || orders.every((o) => o.servedAt));
+  // The summary is part of the playful side (Moi > Préférences)
+  const finished = playfulOn() && orders.length > 0 && (!open || orders.every((o) => o.servedAt));
 
   return (
     <div className="page-in">
       <PageHeader
         back="/"
         title={round.title}
+        eyebrow={pop ? [open ? t("ordersOpen") : t("closedChip"), round.code && t("codeN", { code: round.code })].filter(Boolean).join(" · ") : undefined}
         actions={
           <>
-            {open && (
+            {open && !pop && (
               <button className="icon-btn text-ink" onClick={() => setSharing(true)} aria-label={t("groupOrder")}>
                 <QrCode size={21} />
               </button>
@@ -103,7 +115,7 @@ export default function Round() {
           </>
         }
       >
-        <p className="mt-2 flex items-center gap-2 text-sm text-muted">
+        <p className="mt-2 flex items-center gap-2 text-sm text-muted pop:hidden">
           <span className={`chip px-2.5 py-1 text-[12px] font-semibold ${open ? "bg-pistache/15 text-pistache" : "bg-surface text-muted"}`}>
             {open ? t("ordersOpen") : t("closedChip")}
           </span>
@@ -133,7 +145,7 @@ export default function Round() {
           value={view}
           onChange={setView}
           options={[
-            { value: "orders", label: t("ordersTab") },
+            { value: "orders", label: pop && orders.length ? `${t("ordersTab")} · ${orders.length}` : t("ordersTab") },
             { value: "service", label: t("serviceTab") },
           ]}
         />

@@ -10,6 +10,9 @@ import { TRPCProvider } from "@/providers/trpc";
 import { I18nProvider } from "@/lib/i18n";
 import { StyleProvider } from "@/lib/style";
 import App from "./App";
+import { watchUpdates } from "@/lib/updates";
+
+watchUpdates();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

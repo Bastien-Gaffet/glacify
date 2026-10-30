@@ -1,9 +1,12 @@
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { Check, IceCreamBowl, IceCreamCone, Minus, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Check, IceCreamBowl, IceCreamCone, Minus, Pipette, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { clsx } from "clsx";
 import { ACCENT_PALETTE, DEFAULT_ACCENT, FLAVOR_PALETTE, FLAVOR_PATTERNS, MAX_SCOOPS, inkOn, type ContainerKind, type FlavorPattern, type Menu } from "@contracts/menu";
 import { FlavorDot } from "@/components/FlavorPattern";
+import { ColorPicker } from "@/components/ColorPicker";
+import { IconTile } from "@/components/menu";
+import { usePop } from "@/lib/style";
 import { trpc } from "@/providers/trpc";
 import { PageHeader } from "@/components/PageHeader";
 import { Sheet } from "@/components/Sheet";
@@ -27,12 +30,35 @@ function Section({ title, hint, onAdd, addLabel, children }: { title: string; hi
           <h2 className="font-display text-[22px] font-bold">{title}</h2>
           <p className="text-sm text-muted">{hint}</p>
         </div>
-        <button className="icon-btn flex-none bg-surface text-ink" onClick={onAdd} aria-label={addLabel}>
+        <button className="icon-btn flex-none bg-surface text-ink pop:border-[3px] pop:border-ink pop:bg-lemon" onClick={onAdd} aria-label={addLabel}>
           <Plus size={20} />
         </button>
       </div>
-      <div className="card overflow-hidden [&>*+*]:border-t [&>*+*]:border-line">{children}</div>
+      <div className="card overflow-hidden [&>*+*]:border-t [&>*+*]:border-line pop:[&>*+*]:border-t-2 pop:[&>*+*]:border-ink/10">{children}</div>
     </section>
+  );
+}
+
+/** Pop: a flavor as a sticker card, its switch on top, its name and state below */
+function FlavorCard({ f, onToggle, onEdit }: { f: Menu["flavors"][number]; onToggle: (v: boolean) => void; onEdit: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div className={clsx("flex flex-col gap-1.5 rounded-[24px] border-[3px] border-ink p-2.5 pl-3", f.available ? "bg-canvas" : "bg-surface")}>
+      <div className="flex items-start justify-between gap-2">
+        <button onClick={onEdit} aria-label={t("editFlavor")} className={clsx("transition active:scale-95", !f.available && "opacity-60")}>
+          <FlavorDot look={f} className="block h-11 w-11 !rounded-[14px] border-[3px] border-ink" />
+        </button>
+        <Switch checked={f.available} onChange={onToggle} label={t("availableLabel", { name: f.name })} />
+      </div>
+      <button onClick={onEdit} className="min-w-0 text-left">
+        <span className={clsx("block truncate font-display text-[17px] font-bold", !f.available && "opacity-60")}>
+          {f.name}
+        </span>
+        <span className={clsx("block text-[11px] font-extrabold uppercase", f.available ? "text-pistache" : "text-accent")}>
+          {f.available ? t("available") : t("soldOut")}
+        </span>
+      </button>
+    </div>
   );
 }
 
@@ -58,8 +84,9 @@ const SHEET_TITLES: Record<Kind, [edit: TKey, add: TKey]> = {
   containers: ["editContainer", "newContainer"],
 };
 
-function EditSheet({ editing, setEditing, onDone }: { editing: Editing | null; setEditing: (e: Editing | null) => void; onDone: () => void }) {
+function EditSheet({ editing, setEditing, onDone, palette }: { editing: Editing | null; setEditing: (e: Editing | null) => void; onDone: () => void; palette: string[] }) {
   const { t } = useI18n();
+  const [picking, setPicking] = useState(false);
   const opts = { onSuccess: () => (onDone(), setEditing(null)), onError: showError };
   const saveFlavor = trpc.menu.saveFlavor.useMutation(opts);
   const saveTopping = trpc.menu.saveTopping.useMutation(opts);
@@ -106,7 +133,7 @@ function EditSheet({ editing, setEditing, onDone }: { editing: Editing | null; s
       <div className="space-y-5">
         {e.kind === "flavors" && (
           <div className="flex justify-center py-2">
-            <FlavorDot look={e} className="h-24 w-24 shadow-[inset_0_-6px_0_rgb(0_0_0/0.08)]" />
+            <FlavorDot look={e} className="h-24 w-24 shadow-[inset_0_-6px_0_rgb(0_0_0/0.08)] pop:-rotate-3 pop:!rounded-[30px] pop:border-[3px] pop:border-ink pop:shadow-pop" />
           </div>
         )}
         <div>
@@ -124,7 +151,7 @@ function EditSheet({ editing, setEditing, onDone }: { editing: Editing | null; s
                   key={c}
                   type="button"
                   onClick={() => setEditing({ ...e, color: c })}
-                  className="flex aspect-square items-center justify-center rounded-full shadow-[inset_0_0_0_1px_rgb(0_0_0/0.08)] transition active:scale-90"
+                  className="flex aspect-square items-center justify-center rounded-full shadow-[inset_0_0_0_1px_rgb(0_0_0/0.08)] transition active:scale-90 pop:border-2 pop:border-ink pop:shadow-none"
                   style={{ background: c, color: inkOn(c) }}
                   aria-label={t("colorN", { c })}
                   aria-pressed={e.color.toUpperCase() === c.toUpperCase()}
@@ -133,10 +160,21 @@ function EditSheet({ editing, setEditing, onDone }: { editing: Editing | null; s
                 </button>
               ))}
             </div>
-            <label className="mt-3 flex items-center gap-3 text-sm text-muted">
-              <input type="color" value={e.color} onChange={(ev) => setEditing({ ...e, color: ev.target.value })} className="h-9 w-12 cursor-pointer rounded-lg border-0 bg-transparent" />
-              {t("otherColor")}
-            </label>
+            <button type="button" className="btn-soft mt-3 py-2.5 pl-2.5" onClick={() => setPicking(true)}>
+              <span className="h-7 w-7 rounded-full border-2 border-ink/20 pop:border-[2.5px] pop:border-ink" style={{ background: e.color }} />
+              <Pipette size={17} /> {t("otherColor")}
+            </button>
+            <ColorPicker
+              open={picking}
+              onClose={() => setPicking(false)}
+              title={e.name.trim() ? t("colorOf", { name: e.name.trim() }) : t("colorOfNew")}
+              look={e}
+              palette={palette}
+              onPick={(color) => {
+                setEditing({ ...e, color });
+                setPicking(false);
+              }}
+            />
           </div>
         )}
         {e.kind === "flavors" && (
@@ -151,7 +189,8 @@ function EditSheet({ editing, setEditing, onDone }: { editing: Editing | null; s
                   aria-pressed={e.pattern === p}
                   className={clsx(
                     "flex flex-col items-center gap-1.5 rounded-2xl py-2 text-[12px] font-medium transition active:scale-95",
-                    e.pattern === p ? "bg-ink text-onink" : "bg-surface text-ink",
+                    e.pattern === p ? "bg-ink text-onink pop:bg-accent pop:text-onaccent" : "bg-surface text-ink",
+                    "pop:border-[2.5px] pop:border-ink",
                   )}
                 >
                   <FlavorDot look={{ color: e.color, pattern: p, accent: e.accent }} className="h-10 w-10" />
@@ -218,6 +257,8 @@ function EditSheet({ editing, setEditing, onDone }: { editing: Editing | null; s
 
 export default function Carte() {
   const { t, tn, lang } = useI18n();
+  const pop = usePop();
+  const [tab, setTab] = useState<Kind>("flavors");
   const { data: menu } = trpc.menu.get.useQuery();
   const [editing, setEditing] = useState<Editing | null>(null);
   const utils = trpc.useUtils();
@@ -242,6 +283,86 @@ export default function Carte() {
   const flavors = live(menu.flavors);
   const out = flavors.filter((f) => !f.available).length;
 
+  const newFlavor = () =>
+    setEditing({ kind: "flavors", name: "", color: FLAVOR_PALETTE[flavors.length % FLAVOR_PALETTE.length], pattern: "none", accent: DEFAULT_ACCENT, available: true });
+  const editFlavor = (f: Menu["flavors"][number]) =>
+    setEditing({ kind: "flavors", id: f.id, name: f.name, color: f.color, pattern: f.pattern, accent: f.accent, available: f.available });
+  const palette = flavors.map((f) => f.color);
+
+  if (pop)
+    return (
+      <div className="page-in space-y-4">
+        <PageHeader title={t("myMenu")} eyebrow={t("menuEyebrow")} />
+        <div className="-mt-2">
+          <Segmented
+            label={t("myMenu")}
+            value={tab}
+            onChange={setTab}
+            options={[
+              { value: "flavors", label: `${t("flavors")} · ${flavors.length}` },
+              { value: "toppings", label: t("toppings") },
+              { value: "containers", label: t("containers") },
+            ]}
+          />
+        </div>
+        {tab === "flavors" && (
+          <>
+            <p className="px-1 text-[13px] font-bold text-muted">{t("menuHintPop")}</p>
+            <div className="stagger grid grid-cols-2 gap-2.5">
+              {flavors.map((f) => (
+                <FlavorCard key={f.id} f={f} onToggle={(v) => toggle("flavors", f.id, v)} onEdit={() => editFlavor(f)} />
+              ))}
+              <button
+                onClick={newFlavor}
+                className="flex min-h-[104px] items-center justify-center gap-2 rounded-[24px] border-[3px] border-dashed border-ink/35 font-display text-[16px] font-semibold text-muted transition active:scale-[0.97]"
+              >
+                <Plus size={20} strokeWidth={2.8} /> {t("aFlavor")}
+              </button>
+            </div>
+          </>
+        )}
+        {tab === "toppings" && (
+          <Section title={t("toppings")} hint={t("toppingsHint")} addLabel={t("addTopping")} onAdd={() => setEditing({ kind: "toppings", name: "", available: true })}>
+            {live(menu.toppings).length === 0 && <p className="px-4 py-5 text-sm text-muted">{t("noTopping")}</p>}
+            {live(menu.toppings).map((tp) => (
+              <Row
+                key={tp.id}
+                title={tp.name}
+                sub={tp.available ? t("available") : t("soldOut")}
+                available={tp.available}
+                onToggle={(v) => toggle("toppings", tp.id, v)}
+                onEdit={() => setEditing({ kind: "toppings", id: tp.id, name: tp.name, available: tp.available })}
+              />
+            ))}
+          </Section>
+        )}
+        {tab === "containers" && (
+          <Section
+            title={t("containers")}
+            hint={t("containersHint")}
+            addLabel={t("addContainer")}
+            onAdd={() => setEditing({ kind: "containers", name: "", containerKind: "cup", maxScoops: 3, available: true })}
+          >
+            {live(menu.containers).map((c) => (
+              <Row
+                key={c.id}
+                lead={<IconTile icon={c.kind === "cone" ? IceCreamCone : IceCreamBowl} tone={c.kind === "cone" ? "sun" : "mint"} />}
+                title={c.name}
+                sub={tn("maxScoopsSub", c.maxScoops)}
+                available={c.available}
+                onToggle={(v) => toggle("containers", c.id, v)}
+                onEdit={() => setEditing({ kind: "containers", id: c.id, name: c.name, containerKind: c.kind, maxScoops: c.maxScoops, available: c.available })}
+              />
+            ))}
+          </Section>
+        )}
+        <button className="btn-ghost mx-auto flex" onClick={() => restore.mutate({ lang })} disabled={restore.isPending}>
+          <RotateCcw size={16} /> {t("restoreClassics")}
+        </button>
+        <EditSheet editing={editing} setEditing={setEditing} onDone={refresh} palette={palette} />
+      </div>
+    );
+
   return (
     <div className="page-in space-y-9">
       <PageHeader title={t("myMenu")}>
@@ -252,7 +373,7 @@ export default function Carte() {
         title={t("flavors")}
         hint={[tn("flavorCount", flavors.length), out ? tn("soldOutCount", out) : ""].filter(Boolean).join(", ")}
         addLabel={t("addFlavor")}
-        onAdd={() => setEditing({ kind: "flavors", name: "", color: FLAVOR_PALETTE[flavors.length % FLAVOR_PALETTE.length], pattern: "none", accent: DEFAULT_ACCENT, available: true })}
+        onAdd={newFlavor}
       >
         {flavors.map((f) => (
           <Row
@@ -262,7 +383,7 @@ export default function Carte() {
             sub={f.available ? t("available") : t("soldOut")}
             available={f.available}
             onToggle={(v) => toggle("flavors", f.id, v)}
-            onEdit={() => setEditing({ kind: "flavors", id: f.id, name: f.name, color: f.color, pattern: f.pattern, accent: f.accent, available: f.available })}
+            onEdit={() => editFlavor(f)}
           />
         ))}
       </Section>
@@ -308,7 +429,7 @@ export default function Carte() {
         <RotateCcw size={16} /> {t("restoreClassics")}
       </button>
 
-      <EditSheet editing={editing} setEditing={setEditing} onDone={refresh} />
+      <EditSheet editing={editing} setEditing={setEditing} onDone={refresh} palette={palette} />
     </div>
   );
 }
