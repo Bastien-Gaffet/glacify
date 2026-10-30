@@ -6,6 +6,7 @@ import { IceCream } from "@/components/IceCream";
 import { EmptyArt } from "@/components/EmptyArt";
 import { buzz } from "@/lib/feel";
 import { FlavorDot } from "@/components/FlavorPattern";
+import { IconTile } from "@/components/menu";
 import { confirmDialog } from "@/components/Confirm";
 import { describeOrder, lookup, plural } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
@@ -21,8 +22,10 @@ const ServiceMode = lazy(() => import("./ServiceMode").then((m) => ({ default: m
 function Step({ n, title, hint, children }: { n: number; title: ReactNode; hint?: string; children: ReactNode }) {
   return (
     <section>
-      <h2 className="mb-1 flex items-center gap-2.5 font-display text-[20px] font-bold">
-        <span className="tabular flex h-7 w-7 flex-none items-center justify-center rounded-full bg-ink text-[13px] text-onink">{n}</span>
+      <h2 className="mb-1 flex items-center gap-2.5 font-display text-[20px] font-bold pop:text-[22px]">
+        <span className="tabular flex h-7 w-7 flex-none items-center justify-center rounded-full bg-ink text-[13px] text-onink pop:h-8 pop:w-8 pop:-rotate-6 pop:rounded-[11px] pop:border-[2.5px] pop:border-ink pop:bg-accent pop:text-[15px] pop:text-onaccent">
+          {n}
+        </span>
         {title}
       </h2>
       {hint && <p className="mb-3 pl-[38px] text-sm text-muted">{hint}</p>}
@@ -51,14 +54,14 @@ function Task({
       onClick={() => (buzz(), onToggle())}
       aria-pressed={done}
       className={clsx(
-        "flex min-h-[64px] w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left transition active:scale-[0.99]",
-        done ? "bg-surface/60" : "bg-surface hover:bg-sunken",
+        "flex min-h-[64px] w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left transition active:scale-[0.99] pop:rounded-[24px] pop:border-[3px] pop:border-ink pop:py-3",
+        done ? "bg-surface/60 pop:bg-surface" : "bg-surface hover:bg-sunken pop:bg-canvas pop:hover:bg-canvas",
       )}
     >
       <span
         className={clsx(
-          "flex h-7 w-7 flex-none items-center justify-center rounded-full border-2 transition",
-          done ? "border-pistache bg-pistache text-white" : "border-line bg-canvas",
+          "flex h-7 w-7 flex-none items-center justify-center rounded-full border-2 transition pop:border-[2.5px] pop:border-ink",
+          done ? "border-pistache bg-pistache text-white pop:bg-mint pop:text-ink" : "border-line bg-canvas",
         )}
       >
         {done && <Check size={16} strokeWidth={3} />}
@@ -157,12 +160,12 @@ export function Service({
             <RotateCcw size={15} /> {t("restart")}
           </button>
         </div>
-        <div className="h-2.5 overflow-hidden rounded-full bg-sunken">
-          <div className="h-full rounded-full bg-pistache transition-all duration-500" style={{ width: `${(served / total) * 100}%` }} />
+        <div className="h-2.5 overflow-hidden rounded-full bg-sunken pop:bg-ink/15">
+          <div className="h-full rounded-full bg-pistache transition-all duration-500 pop:bg-accent" style={{ width: `${(served / total) * 100}%` }} />
         </div>
       </div>
 
-      <h2 className="eyebrow -mb-4">{t("recap")}</h2>
+      <h2 className="eyebrow -mb-4 pop:font-display pop:text-[20px] pop:font-bold pop:text-ink">{t("recap")}</h2>
 
       <Step n={step++} title={t("getContainersOut")}>
         {plan.containers.map(({ container, count }) => {
@@ -172,11 +175,7 @@ export function Service({
               key={container.id}
               done={checks.has(key)}
               onToggle={() => state.setChecks([key], !checks.has(key))}
-              lead={
-                <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-canvas">
-                  {container.kind === "cone" ? <IceCreamCone size={20} /> : <IceCreamBowl size={20} />}
-                </span>
-              }
+              lead={<IconTile icon={container.kind === "cone" ? IceCreamCone : IceCreamBowl} tone={container.kind === "cone" ? "sun" : "mint"} />}
               title={plural(count, container.name.toLowerCase())}
               count={count}
             />
@@ -199,7 +198,7 @@ export function Service({
                   done,
                 )
               }
-              lead={<FlavorDot look={s.tub.flavor} />}
+              lead={<FlavorDot look={s.tub.flavor} className="h-10 w-10 pop:h-11 pop:w-11 pop:-rotate-3 pop:!rounded-[14px] pop:border-[2.5px] pop:border-ink" />}
               title={s.tub.flavor.name}
               sub={s.tub.groups.map((g, i) => (
                 <span key={i} className="mt-0.5 block">
@@ -240,7 +239,7 @@ export function Service({
             done={state.isServed(o.id)}
             onToggle={() => state.serve(o.id, !state.isServed(o.id))}
             lead={
-              <span className="flex w-9 flex-none justify-center">
+              <span className="flex w-9 flex-none justify-center pop:-rotate-6">
                 <IceCream kind={l.container(o.containerId).kind} colors={plan.placed(o).map((id) => l.flavor(id))} size={30} />
               </span>
             }
