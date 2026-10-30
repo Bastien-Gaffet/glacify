@@ -119,6 +119,11 @@ Gelateria.
   commander le groupe » (orange, QR) et « Une glace » (lilas), pastilles « Nouveau »/« Servi » ;
 - Ma carte : onglets Parfums / Suppléments / Contenants ; chaque parfum est une carte autocollant
   (pastille à motif + interrupteur en haut, nom et état dessous, jamais superposés) ;
+- écran de bienvenue / connexion : carte lilas avec trois glaces dessinées par `IceCream`
+  (pot, grand cornet, petit cornet, hauteurs et angles différents, centrées), étincelles,
+  « Se connecter » et « Créer un compte » en pilules côte à côte ;
+- reflets : toute boule dessinée a son petit reflet blanc (glaces de l'app, cornet de l'accueil,
+  dessins vides, logo) ;
 - Moi : carte profil lilas, tuiles de chiffres (tournées, glaces servies, parfum favori,
   `rounds.stats`), icônes des réglages sur pastilles de couleur penchées (`MenuRow tone`),
   « Se déconnecter » en pilule framboise ;
